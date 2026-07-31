@@ -1265,6 +1265,30 @@
     },
   ];
 
+  /* 底盘：水果本色的淡化版。樱桃是两颗球、葡萄是一串、柠檬是纺锤，
+     果实本身填不满碰撞圆，挤在一起就分不清边界。铺一层淡色圆盘后
+     每个水果都是一枚可辨识的圆形代币，同时也让碰撞范围一目了然。 */
+  const PALE = F.map(f => ({
+    hi:   mix(f.c, [255,255,255], .86),
+    mid:  mix(f.c, [255,255,255], .68),
+    edge: mix(f.c, [255,255,255], .34),
+  }));
+
+  function drawToken(g, lv, r){
+    const p = PALE[lv];
+    const bg = g.createRadialGradient(-r*.32, -r*.36, r*.04, 0, 0, r);
+    bg.addColorStop(0, p.hi); bg.addColorStop(1, p.mid);
+    g.beginPath(); g.arc(0, 0, r, 0, TAU);
+    g.fillStyle = bg; g.fill();
+
+    const lw = Math.max(1, r*.05);
+    g.beginPath(); g.arc(0, 0, r - lw/2, 0, TAU);
+    g.lineWidth = lw; g.strokeStyle = p.edge;
+    g.globalAlpha *= .75; g.stroke(); g.globalAlpha /= .75;
+
+    ART[lv](g, r * 0.84);   // 果实留出一圈底盘
+  }
+
   function drawFruit(f, ghost){
     const r = f.r;
     const s = f.pop > 0 ? 1 + Math.sin(f.pop * Math.PI) * 0.16 : 1;
@@ -1284,7 +1308,7 @@
       ctx.beginPath(); ctx.arc(0, r*.16, r*1.08, 0, TAU);
       ctx.fillStyle = sg; ctx.fill();
     }
-    ART[f.lv](ctx, r);
+    drawToken(ctx, f.lv, r);
     ctx.restore();
   }
 
@@ -1299,7 +1323,7 @@
     const g = c.getContext("2d");
     g.scale(dpr, dpr);
     g.translate(px / 2, px / 2);
-    ART[lv](g, px / 2 * 0.94);
+    drawToken(g, lv, px / 2 * 0.94);
     const url = c.toDataURL("image/png");
     iconCache.set(key, url);
     return url;
