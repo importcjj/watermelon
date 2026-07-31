@@ -1037,16 +1037,13 @@
     // 2 橘子：干净球体 + 脐点 + 厚叶（去掉了会糊成脏点的麻点纹理）
     (g, r) => {
       orb(g, r, "#FFC978", "#F5892B", "#B4560D");
-      g.save(); g.beginPath(); g.arc(0, 0, r, 0, TAU); g.clip();
-      g.globalAlpha = .13; g.strokeStyle = "#8A3D05";
-      g.lineWidth = Math.max(1, r*.05);
-      for (const sx of [-.62, 0, .62]){
-        g.beginPath(); g.moveTo(r*sx, -r*1.1);
-        g.quadraticCurveTo(r*sx*1.35, 0, r*sx, r*1.1); g.stroke();
-      }
-      g.restore();
-      g.beginPath(); g.arc(-r*.04, -r*.66, r*.15, 0, TAU);
-      g.fillStyle = "rgba(150,72,10,.55)"; g.fill();
+      // 脐点：柔边，太实会像个洞
+      const nv = g.createRadialGradient(-r*.04, -r*.66, 0, -r*.04, -r*.66, r*.14);
+      nv.addColorStop(0, "rgba(150,72,10,.42)");
+      nv.addColorStop(.6, "rgba(150,72,10,.26)");
+      nv.addColorStop(1, "rgba(150,72,10,0)");
+      g.beginPath(); g.arc(-r*.04, -r*.66, r*.14, 0, TAU);
+      g.fillStyle = nv; g.fill();
       leafShape(g, r, .10, -.74, .62, -0.62);
       softGloss(g, r, 1);
       bounce(g, r);
@@ -1109,7 +1106,7 @@
     (g, r) => {
       orb(g, r, "#FF8168", "#E5402B", "#8E1608");
       g.save(); g.beginPath(); g.arc(0, 0, r, 0, TAU); g.clip();
-      g.globalAlpha = .14; g.strokeStyle = "#7E1206"; g.lineWidth = Math.max(1.2, r*.06);
+      g.globalAlpha = .08; g.strokeStyle = "#7E1206"; g.lineWidth = Math.max(1.2, r*.07);
       for (const sx of [-.55, .55]){
         g.beginPath(); g.moveTo(r*sx, -r*1.1);
         g.quadraticCurveTo(r*sx*1.45, 0, r*sx, r*1.1); g.stroke();
