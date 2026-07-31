@@ -1,0 +1,55 @@
+# 🍉 合成大西瓜
+
+水果合成小游戏的复刻版。相同水果相撞合成更大一级，一路合到大西瓜；堆过红线两秒就结束。
+
+**在线试玩 → https://importcjj.github.io/watermelon/**
+
+单文件、零依赖、零构建。可安装到主屏幕离线游玩。
+
+## 特点
+
+- **自研物理引擎** —— 没有用 matter.js 之类的库。圆形刚体，固定步长 1/120s + 累加器，每步 4 次约束迭代；碰撞用冲量法求解，法向带弹性系数、切向带摩擦并计算角动量（转动惯量按实心圆盘 `I = ½mr²`），所以水果落在斜坡上会真的滚下去
+- **实时合成的 BGM** —— 没有音频文件。100 BPM，四小节循环 `Cmaj7 → Am7 → Dm7 → G7`，四个声部（贝斯 / 和弦垫 / 主旋律 / 轻打击）全部由 WebAudio 振荡器实时生成，25ms 轮询 + 140ms 前瞻的 lookahead scheduler 保证节奏不漂
+- **PWA** —— Service Worker 离线缓存，可安装到主屏幕，支持刘海屏安全区，亮/暗主题自适应
+- **图标也是代码生成的** —— `tools/mkicons.py` 用纯 Python stdlib 手写 PNG 编码器绘制，解析式抗锯齿，无第三方依赖
+
+## 玩法
+
+| 操作 | 说明 |
+|---|---|
+| 鼠标移动 / 手指滑动 | 瞄准 |
+| 松开 / 点击 | 投下 |
+| <kbd>←</kbd> <kbd>→</kbd> | 移动 |
+| <kbd>空格</kbd> | 投放 |
+| <kbd>R</kbd> | 重开 |
+
+合成链共 11 级：葡萄 → 樱桃 → 橘子 → 柠檬 → 猕猴桃 → 西红柿 → 桃子 → 菠萝 → 椰子 → 半个瓜 → 大西瓜。
+
+合成第 n 级得 `n(n+1)/2` 分。两个大西瓜相撞会双双消失并加 200 分。
+
+## 本地运行
+
+```bash
+python3 -m http.server 8080
+# 打开 http://localhost:8080
+```
+
+直接双击 `index.html` 也能玩，但 Service Worker 需要 HTTPS 或 localhost，且部分浏览器会禁用 `file://` 下的 localStorage（最高分就存不住）。
+
+## 文件结构
+
+```
+index.html              游戏全部代码（HTML + CSS + JS）
+manifest.webmanifest    PWA 清单
+sw.js                   Service Worker
+icons/                  图标（由 tools/mkicons.py 生成）
+tools/mkicons.py        图标生成脚本
+```
+
+## 说明
+
+本项目是出于学习目的对该玩法的独立实现，与《合成大西瓜》《スイカゲーム》等作品的开发方无任何关联。代码全部原创，图标为程序生成。游戏中的水果使用系统 emoji 渲染，仅用于本地展示。
+
+## License
+
+MIT

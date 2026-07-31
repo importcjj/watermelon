@@ -1,0 +1,1130 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>合成大西瓜</title>
+<meta name="description" content="水果合成小游戏：相同水果相撞合成更大一级，一路合到大西瓜。自研圆形刚体物理引擎，可安装到主屏幕离线游玩。">
+<meta name="theme-color" content="#EDF1E4" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#101815" media="(prefers-color-scheme: dark)">
+<meta name="color-scheme" content="light dark">
+
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icons/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="大西瓜">
+
+<meta property="og:type" content="website">
+<meta property="og:title" content="合成大西瓜">
+<meta property="og:description" content="水果合成小游戏，自研物理引擎，可离线游玩。">
+<meta property="og:image" content="./icons/icon-512.png">
+<style>
+  :root{
+    --ground:#EDF1E4;
+    --panel:#FCFBF3;
+    --panel-2:#F4F1E3;
+    --ink:#17251C;
+    --ink-soft:#57685B;
+    --ink-faint:#8B9A8D;
+    --line:#D2DBC7;
+    --accent:#E0432E;
+    --accent-2:#E5952A;
+    --rind:#2F7D4F;
+    --jar-top:#FBF6E7;
+    --jar-bot:#EFE4CB;
+    --glass:rgba(255,255,255,.85);
+    --glass-edge:rgba(255,255,255,.9);
+    --jar-ring:rgba(23,37,28,.16);
+    --shade:rgba(23,37,28,.10);
+
+    --display:"Yuanti SC","Hiragino Maru Gothic ProN","Arial Rounded MT Bold",ui-rounded,"PingFang SC",system-ui,sans-serif;
+    --body:"PingFang SC","Hiragino Sans","Microsoft YaHei",system-ui,-apple-system,sans-serif;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --ground:#101815;
+      --panel:#18231E;
+      --panel-2:#1F2C25;
+      --ink:#E9F1E7;
+      --ink-soft:#A2B5A7;
+      --ink-faint:#6E8375;
+      --line:#2B3A33;
+      --accent:#FF6047;
+      --accent-2:#FFC152;
+      --rind:#5FB57C;
+      --jar-top:#1B2823;
+      --jar-bot:#121C18;
+      --glass:rgba(255,255,255,.10);
+      --glass-edge:rgba(190,225,205,.22);
+      --jar-ring:rgba(0,0,0,.45);
+      --shade:rgba(0,0,0,.4);
+    }
+  }
+  :root[data-theme="dark"]{
+    --ground:#101815; --panel:#18231E; --panel-2:#1F2C25;
+    --ink:#E9F1E7; --ink-soft:#A2B5A7; --ink-faint:#6E8375; --line:#2B3A33;
+    --accent:#FF6047; --accent-2:#FFC152; --rind:#5FB57C;
+    --jar-top:#1B2823; --jar-bot:#121C18;
+    --glass:rgba(255,255,255,.10); --glass-edge:rgba(190,225,205,.22);
+    --jar-ring:rgba(0,0,0,.45); --shade:rgba(0,0,0,.4);
+  }
+  :root[data-theme="light"]{
+    --ground:#EDF1E4; --panel:#FCFBF3; --panel-2:#F4F1E3;
+    --ink:#17251C; --ink-soft:#57685B; --ink-faint:#8B9A8D; --line:#D2DBC7;
+    --accent:#E0432E; --accent-2:#E5952A; --rind:#2F7D4F;
+    --jar-top:#FBF6E7; --jar-bot:#EFE4CB;
+    --glass:rgba(255,255,255,.85); --glass-edge:rgba(255,255,255,.9);
+    --jar-ring:rgba(23,37,28,.16); --shade:rgba(23,37,28,.10);
+  }
+
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--ground); color:var(--ink);
+    font-family:var(--body); -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+    background-image:
+      radial-gradient(120% 70% at 50% -10%, color-mix(in srgb, var(--accent-2) 12%, transparent), transparent 60%);
+  }
+  .wrap{
+    max-width:840px; margin:0 auto; padding:20px 18px 28px;
+    display:flex; flex-direction:column; gap:16px;
+  }
+
+  /* ---- masthead ---- */
+  .masthead{display:flex; align-items:flex-end; justify-content:space-between; gap:16px; flex-wrap:wrap}
+  .kicker{
+    font-size:11px; letter-spacing:.22em; text-transform:uppercase;
+    color:var(--rind); font-weight:600;
+  }
+  h1{
+    font-family:var(--display); font-size:clamp(28px,6vw,40px); line-height:1;
+    margin:4px 0 0; letter-spacing:.02em; text-wrap:balance;
+  }
+  h1 em{font-style:normal; color:var(--accent)}
+  .scoreboard{display:flex; gap:10px}
+  .score-card{
+    background:var(--panel); border:1px solid var(--line); border-radius:12px;
+    padding:8px 14px; min-width:96px;
+  }
+  .score-card span{display:block; font-size:10px; letter-spacing:.16em; color:var(--ink-faint); text-transform:uppercase}
+  .score-card strong{
+    display:block; font-family:var(--mono); font-variant-numeric:tabular-nums;
+    font-size:22px; font-weight:600; line-height:1.2; margin-top:2px;
+  }
+  #scoreVal{color:var(--accent)}
+
+  /* ---- stage ---- */
+  .stage{display:grid; grid-template-columns:minmax(0,1fr) 176px; gap:18px; align-items:start}
+
+  .jar{
+    position:relative;
+    aspect-ratio:440/620;
+    max-height:min(64vh,620px);
+    margin:0 auto;
+    width:auto; height:min(64vh,620px);
+    border:3px solid var(--glass-edge);
+    border-top-width:0;
+    border-radius:4px 4px 30px 30px;
+    background:linear-gradient(180deg,var(--jar-top),var(--jar-bot));
+    box-shadow:
+      inset 0 0 0 1px var(--jar-ring),
+      inset 14px 0 26px -18px rgba(255,255,255,.9),
+      inset -14px 0 26px -18px var(--shade),
+      0 18px 40px -22px rgba(23,37,28,.5);
+    overflow:hidden;
+    touch-action:none;
+  }
+  /* glass streak */
+  .jar::before{
+    content:""; position:absolute; top:0; bottom:6%; left:6%; width:9%;
+    background:linear-gradient(90deg,var(--glass),transparent);
+    border-radius:0 0 40px 40px; opacity:.55; pointer-events:none; z-index:3;
+  }
+  .jar::after{
+    content:""; position:absolute; inset:0; pointer-events:none; z-index:3;
+    border-radius:inherit;
+    box-shadow:inset 0 -30px 40px -34px var(--shade);
+  }
+  #game{position:absolute; inset:0; width:100%; height:100%; display:block; z-index:2}
+
+  .overlay{
+    position:absolute; inset:0; z-index:5; display:none;
+    flex-direction:column; align-items:center; justify-content:center; gap:6px;
+    background:color-mix(in srgb, var(--ground) 82%, transparent);
+    backdrop-filter:blur(3px); text-align:center; padding:24px;
+  }
+  .overlay.show{display:flex}
+  .overlay .big{font-family:var(--display); font-size:30px; margin:0}
+  .overlay .final{font-family:var(--mono); font-variant-numeric:tabular-nums; font-size:46px; color:var(--accent); font-weight:600; line-height:1.1}
+  .overlay p{margin:0; color:var(--ink-soft); font-size:13px}
+
+  .btn{
+    font-family:var(--body); font-size:14px; font-weight:600; cursor:pointer;
+    border:1px solid var(--line); background:var(--panel); color:var(--ink);
+    padding:9px 18px; border-radius:999px; transition:transform .12s ease, background .12s ease;
+  }
+  .btn:hover{background:var(--panel-2)}
+  .btn:active{transform:translateY(1px)}
+  .btn:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+  .btn.primary{background:var(--accent); border-color:var(--accent); color:#fff}
+  .btn.primary:hover{background:color-mix(in srgb,var(--accent) 88%, #000)}
+
+  /* ---- rail ---- */
+  .rail{display:flex; flex-direction:column; gap:14px}
+  .card{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:12px}
+  .card h2{
+    font-size:10px; letter-spacing:.18em; text-transform:uppercase;
+    color:var(--ink-faint); margin:0 0 10px; font-weight:600;
+  }
+  .next{display:flex; align-items:center; gap:12px}
+  .next .disc{width:44px; height:44px; flex:none; display:grid; place-items:center; border-radius:50%; font-size:26px}
+  .next .nm{font-family:var(--display); font-size:16px}
+  .next .sub{font-size:11px; color:var(--ink-faint)}
+
+  .chain{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:1px}
+  .chain li{
+    display:flex; align-items:center; gap:9px; padding:3px 4px; border-radius:7px;
+    font-size:12px; color:var(--ink-faint); opacity:.5; transition:opacity .3s ease;
+  }
+  .chain li.got{opacity:1; color:var(--ink)}
+  .chain li.new{background:color-mix(in srgb,var(--accent-2) 22%, transparent)}
+  .chain .bead{
+    display:grid; place-items:center; border-radius:50%; flex:none;
+    background:var(--panel-2); font-size:12px;
+  }
+  .chain li.got .bead{filter:none}
+  .chain li:not(.got) .bead{filter:grayscale(1)}
+  .chain .idx{margin-left:auto; font-family:var(--mono); font-size:10px; color:var(--ink-faint)}
+
+  .tools{display:flex; gap:8px}
+  .tools .btn{flex:1; padding:8px 10px; font-size:13px}
+
+  .tog{display:flex; gap:6px}
+  .tog .btn{flex:1; padding:7px 4px; font-size:12px; font-weight:500}
+  .btn.off{color:var(--ink-faint); background:var(--panel-2); text-decoration:line-through; text-decoration-thickness:1px}
+  .vol{display:flex; align-items:center; gap:9px; margin-top:11px; font-size:10px;
+       letter-spacing:.14em; color:var(--ink-faint)}
+  .vol input[type=range]{
+    flex:1; min-width:0; height:3px; -webkit-appearance:none; appearance:none;
+    background:var(--line); border-radius:99px; outline:none; cursor:pointer;
+  }
+  .vol input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none; appearance:none; width:13px; height:13px; border-radius:50%;
+    background:var(--accent); border:2px solid var(--panel); box-shadow:0 0 0 1px var(--accent);
+  }
+  .vol input[type=range]::-moz-range-thumb{
+    width:11px; height:11px; border-radius:50%; background:var(--accent); border:2px solid var(--panel);
+  }
+  .vol input[type=range]:focus-visible{outline:2px solid var(--accent); outline-offset:4px}
+
+  .howto{
+    font-size:12px; color:var(--ink-soft); line-height:1.7; text-align:center;
+    border-top:1px solid var(--line); padding-top:12px;
+  }
+  .howto kbd{
+    font-family:var(--mono); font-size:11px; background:var(--panel); border:1px solid var(--line);
+    border-bottom-width:2px; border-radius:5px; padding:1px 5px; color:var(--ink);
+  }
+
+  @media (max-width:720px){
+    .stage{grid-template-columns:1fr}
+    .jar{height:min(58vh,560px)}
+    .rail{flex-direction:row; flex-wrap:wrap}
+    .rail .card{flex:1 1 160px}
+    .chain{flex-direction:row; flex-wrap:wrap; gap:6px}
+    .chain li{padding:2px 6px 2px 2px; background:var(--panel-2)}
+    .chain .idx{display:none}
+    .tools{flex:1 1 100%}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *{transition-duration:.01ms !important}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="masthead">
+    <div>
+      <div class="kicker">Fruit Jar · 果物合成</div>
+      <h1>合成<em>大西瓜</em></h1>
+    </div>
+    <div class="scoreboard">
+      <div class="score-card"><span>得分</span><strong id="scoreVal">0</strong></div>
+      <div class="score-card"><span>最高</span><strong id="bestVal">0</strong></div>
+    </div>
+  </header>
+
+  <main class="stage">
+    <div class="jar" id="jar">
+      <canvas id="game"></canvas>
+      <div class="overlay" id="overlay">
+        <p class="big" id="ovTitle">水果溢出罐子了</p>
+        <div class="final" id="ovScore">0</div>
+        <p id="ovSub">最大合成到 葡萄</p>
+        <p style="margin-top:14px"><button class="btn primary" id="againBtn">再来一局</button></p>
+      </div>
+    </div>
+
+    <aside class="rail">
+      <section class="card">
+        <h2>下一个</h2>
+        <div class="next">
+          <div class="disc" id="nextDisc">🍇</div>
+          <div>
+            <div class="nm" id="nextName">葡萄</div>
+            <div class="sub" id="nextSub">第 1 级</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>合成链</h2>
+        <ul class="chain" id="chain"></ul>
+      </section>
+
+      <section class="card">
+        <h2>声音</h2>
+        <div class="tog">
+          <button class="btn" id="soundBtn" aria-pressed="true">🔊 音效</button>
+          <button class="btn" id="musicBtn" aria-pressed="true">🎵 音乐</button>
+        </div>
+        <label class="vol" for="volRange">
+          <span>音量</span>
+          <input id="volRange" type="range" min="0" max="100" value="50">
+        </label>
+      </section>
+
+      <div class="tools">
+        <button class="btn" id="restartBtn">重开一局</button>
+      </div>
+    </aside>
+  </main>
+
+  <p class="howto">
+    移动鼠标或手指瞄准，松开投下 · 相同水果相撞会合成更大一级 · 堆过红线两秒就结束
+    <span class="kbdline"><br>键盘：<kbd>←</kbd> <kbd>→</kbd> 移动 · <kbd>空格</kbd> 投放 · <kbd>R</kbd> 重开 · 首次点击后背景音乐自动响起</span>
+  </p>
+</div>
+
+<script>
+(() => {
+  "use strict";
+
+  /* ---------------- 水果定义 ---------------- */
+  const F = [
+    { n:"葡萄",   r:20,  c:"#9B5DE5", e:"🍇" },
+    { n:"樱桃",   r:27,  c:"#E23F5A", e:"🍒" },
+    { n:"橘子",   r:35,  c:"#F5892B", e:"🍊" },
+    { n:"柠檬",   r:42,  c:"#F2D047", e:"🍋" },
+    { n:"猕猴桃", r:51,  c:"#8BBF4D", e:"🥝" },
+    { n:"西红柿", r:60,  c:"#E5402B", e:"🍅" },
+    { n:"桃子",   r:70,  c:"#F7A5A0", e:"🍑" },
+    { n:"菠萝",   r:82,  c:"#EFC13C", e:"🍍" },
+    { n:"椰子",   r:96,  c:"#D9C7A8", e:"🥥" },
+    { n:"半个瓜", r:112, c:"#A8D46A", e:"🍈" },
+    { n:"大西瓜", r:130, c:"#3FA34D", e:"🍉" },
+  ];
+  const MAX = F.length - 1;
+  const EMOJI_FONT = '"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
+
+  /* ---------------- 世界参数 ---------------- */
+  const W = 440, H = 620;      // 罐内坐标系
+  const GRAV = 1500;
+  const REST = 0.10;           // 弹性
+  const MU   = 0.32;           // 摩擦
+  const DT   = 1/120;
+  const ITER = 4;
+  const DROP_Y = 66;
+  const LINE_Y = 116;          // 死亡线
+  const COOLDOWN = 0.40;
+  const DANGER_LIMIT = 2.0;
+  const VMAX = 1900;
+  const TAU = Math.PI * 2;
+
+  /* ---------------- 画布 ---------------- */
+  const jar = document.getElementById("jar");
+  const cv = document.getElementById("game");
+  const ctx = cv.getContext("2d");
+  let scale = 1;
+
+  function resize(){
+    const rect = jar.getBoundingClientRect();
+    if (!rect.width) return;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+    cv.width  = Math.round(rect.width * dpr);
+    cv.height = Math.round(rect.height * dpr);
+    scale = (rect.width / W) * dpr;
+  }
+  new ResizeObserver(resize).observe(jar);
+  resize();
+
+  /* ---------------- 主题色（罐内线条随主题） ---------------- */
+  let themeAccent = "#E0432E", themeFaint = "rgba(0,0,0,.2)";
+  function refreshTheme(){
+    const cs = getComputedStyle(document.documentElement);
+    themeAccent = cs.getPropertyValue("--accent").trim() || themeAccent;
+    const dark = document.documentElement.dataset.theme === "dark" ||
+      (!document.documentElement.dataset.theme && matchMedia("(prefers-color-scheme: dark)").matches);
+    themeFaint = dark ? "rgba(233,241,231,.16)" : "rgba(23,37,28,.14)";
+  }
+  refreshTheme();
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", refreshTheme);
+  new MutationObserver(refreshTheme).observe(document.documentElement, { attributes:true, attributeFilter:["data-theme"] });
+
+  /* ---------------- 颜色工具 ---------------- */
+  const hex2rgb = h => [parseInt(h.slice(1,3),16), parseInt(h.slice(3,5),16), parseInt(h.slice(5,7),16)];
+  function mix(h, t, k){ // t: [r,g,b] 目标
+    const a = hex2rgb(h);
+    return `rgb(${a.map((v,i)=>Math.round(v+(t[i]-v)*k)).join(",")})`;
+  }
+  const lighten = h => mix(h, [255,255,255], .42);
+  const darken  = h => mix(h, [24,30,22], .28);
+
+  /* ---------------- 状态 ---------------- */
+  let fruits = [], particles = [], pops = [];
+  let score = 0, best = 0, dangerT = 0, over = false;
+  let cool = 0, pendingLv = 0, nextLv = 0, aimX = W/2, shake = 0, tick = 0;
+  let seen = new Array(F.length).fill(false);
+  let uid = 1;
+
+  try { best = parseInt(localStorage.getItem("watermelon_best") || "0", 10) || 0; } catch(e){}
+
+  function randLevel(){
+    const pool = [0,0,0,1,1,1,2,2,3,4];
+    return pool[(Math.random()*pool.length)|0];
+  }
+
+  function reset(){
+    fruits = []; particles = []; pops = [];
+    score = 0; dangerT = 0; over = false; cool = 0; shake = 0;
+    seen = new Array(F.length).fill(false);
+    pendingLv = randLevel(); nextLv = randLevel();
+    aimX = W/2;
+    overlay.classList.remove("show");
+    syncHUD();
+  }
+
+  function makeFruit(lv, x, y, vx = 0, vy = 0){
+    const r = F[lv].r;
+    const m = r * r * 0.01;
+    return {
+      id: uid++, lv, x, y, vx, vy, r,
+      a: (Math.random()-.5) * 0.6, av: 0,
+      im: 1/m, ii: 1/(0.5*m*r*r),
+      age: 0, dead: false, pop: 0
+    };
+  }
+
+  /* ---------------- 音频总线 ---------------- */
+  let AC = null, master, sfxBus, musBus, musFilter, echoIn, noiseBuf = null;
+  let sfxOn = true, bgmOn = true, bgmVol = .5;
+
+  function initAudio(){
+    if (AC) return AC;
+    try { AC = new (window.AudioContext || window.webkitAudioContext)(); }
+    catch(e){ return null; }
+
+    master = AC.createGain(); master.gain.value = .9;
+    master.connect(AC.destination);
+
+    sfxBus = AC.createGain(); sfxBus.gain.value = 1;
+    sfxBus.connect(master);
+
+    musBus = AC.createGain(); musBus.gain.value = .0001;
+    musBus.connect(master);
+
+    musFilter = AC.createBiquadFilter();
+    musFilter.type = "lowpass"; musFilter.frequency.value = 2700; musFilter.Q.value = .4;
+    musFilter.connect(musBus);
+
+    // 旋律用的短延迟，制造清亮的余韵
+    const dl = AC.createDelay(1); dl.delayTime.value = .285;
+    const fb = AC.createGain(); fb.gain.value = .24;
+    const wet = AC.createGain(); wet.gain.value = .45;
+    dl.connect(fb); fb.connect(dl); dl.connect(wet); wet.connect(musFilter);
+    echoIn = { dry: musFilter, wet: dl };
+
+    return AC;
+  }
+
+  function resumeAudio(){
+    initAudio();
+    if (!AC) return;
+    if (AC.state === "suspended") AC.resume();
+    if (bgmOn) startMusic();
+  }
+
+  function beep(freq, dur, type = "sine", gain = .16){
+    if (!sfxOn) return;
+    if (!initAudio()) return;
+    try {
+      if (AC.state === "suspended") AC.resume();
+      const t = AC.currentTime;
+      const o = AC.createOscillator(), g = AC.createGain();
+      o.type = type; o.frequency.value = freq;
+      g.gain.setValueAtTime(.0001, t);
+      g.gain.linearRampToValueAtTime(gain, t + .012);
+      g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+      o.connect(g); g.connect(sfxBus);
+      o.start(t); o.stop(t + dur + .03);
+    } catch(e){}
+  }
+
+  /* ---------------- BGM：实时合成的循环小曲 ---------------- */
+  // 100 BPM，4 小节一循环：Cmaj7 → Am7 → Dm7 → G7
+  const BPM = 100, EIGHTH = 30 / BPM;
+  const BARS = [
+    { root: 48, ch: [60, 64, 67, 71] }, // Cmaj7
+    { root: 45, ch: [57, 60, 64, 67] }, // Am7
+    { root: 50, ch: [57, 62, 65, 69] }, // Dm7
+    { root: 43, ch: [59, 62, 65, 67] }, // G7
+  ];
+  // 32 个八分音符的主旋律（null 为休止）
+  const MEL = [
+    64, 67, 69, 67, null, 64, null, 62,
+    72, null, 69, 67, 64, null, 67, null,
+    65, 69, 72, 69, null, 67, null, 65,
+    62, null, 64, 67, 71, null, 69, null,
+  ];
+  let musStep = 0, musNext = 0, musTimer = null, musPlaying = false;
+
+  const mtof = m => 440 * Math.pow(2, (m - 69) / 12);
+
+  function voice(freq, t, dur, type, gain, dest, attack){
+    const o = AC.createOscillator(), g = AC.createGain();
+    o.type = type; o.frequency.setValueAtTime(freq, t);
+    const a = attack || .012;
+    g.gain.setValueAtTime(.0001, t);
+    g.gain.linearRampToValueAtTime(gain, t + a);
+    g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+    o.connect(g); g.connect(dest);
+    o.start(t); o.stop(t + dur + .05);
+  }
+
+  function getNoise(){
+    if (noiseBuf) return noiseBuf;
+    noiseBuf = AC.createBuffer(1, (AC.sampleRate * .25) | 0, AC.sampleRate);
+    const d = noiseBuf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    return noiseBuf;
+  }
+
+  function hat(t, gain){
+    const s = AC.createBufferSource(); s.buffer = getNoise();
+    const hp = AC.createBiquadFilter(); hp.type = "highpass"; hp.frequency.value = 7200;
+    const g = AC.createGain();
+    g.gain.setValueAtTime(gain, t);
+    g.gain.exponentialRampToValueAtTime(.0001, t + .05);
+    s.connect(hp); hp.connect(g); g.connect(musBus);
+    s.start(t); s.stop(t + .09);
+  }
+
+  function kick(t){
+    const o = AC.createOscillator(), g = AC.createGain();
+    o.type = "sine";
+    o.frequency.setValueAtTime(140, t);
+    o.frequency.exponentialRampToValueAtTime(48, t + .11);
+    g.gain.setValueAtTime(.0001, t);
+    g.gain.linearRampToValueAtTime(.12, t + .008);
+    g.gain.exponentialRampToValueAtTime(.0001, t + .18);
+    o.connect(g); g.connect(musBus);
+    o.start(t); o.stop(t + .22);
+  }
+
+  function scheduleStep(i, t){
+    const bar = ((i / 8) | 0) % 4;
+    const s = i % 8;
+    const cycle = (i / 32) | 0;
+    const B = BARS[bar];
+
+    // 贝斯：根音 / 五度交替
+    if (s === 0 || s === 3 || s === 4 || s === 6){
+      const n = (s === 4 || s === 6) ? B.root + 7 : B.root;
+      voice(mtof(n), t, s === 0 ? .44 : .3, "triangle", .13, musFilter);
+    }
+    // 和弦垫：每小节起始，慢起音
+    if (s === 0){
+      for (const n of B.ch) voice(mtof(n), t, EIGHTH * 7.4, "sine", .034, musFilter, .3);
+    }
+    // 主旋律：偶数循环完整，奇数循环留白
+    const mn = MEL[i % 32];
+    if (mn != null && (cycle % 2 === 0 || (i % 4) === 0)){
+      voice(mtof(mn), t, .5, "triangle", .08, echoIn.dry);
+      voice(mtof(mn), t, .5, "triangle", .05, echoIn.wet);
+      voice(mtof(mn + 12), t, .22, "sine", .018, musFilter);
+    }
+    // 轻打击
+    if (s === 0 || s === 4) kick(t);
+    if (s % 2 === 1) hat(t, .022);
+  }
+
+  function pump(){
+    if (!AC || !musPlaying) return;
+    // 后台标签页 setInterval 被节流时，重新对齐避免补播一大串
+    if (musNext < AC.currentTime) musNext = AC.currentTime + .05;
+    while (musNext < AC.currentTime + .14){
+      scheduleStep(musStep, musNext);
+      musStep++;
+      musNext += EIGHTH;
+    }
+  }
+
+  function startMusic(){
+    if (!initAudio() || musPlaying || !bgmOn) return;
+    if (AC.state === "suspended") AC.resume();
+    musPlaying = true;
+    musNext = AC.currentTime + .15;
+    musBus.gain.cancelScheduledValues(AC.currentTime);
+    musBus.gain.setValueAtTime(.0001, AC.currentTime);
+    musBus.gain.exponentialRampToValueAtTime(Math.max(.0002, bgmVol * .9), AC.currentTime + 1.6);
+    musTimer = setInterval(pump, 25);
+    pump();
+  }
+
+  function stopMusic(){
+    if (!AC) return;
+    musPlaying = false;
+    if (musTimer){ clearInterval(musTimer); musTimer = null; }
+    musBus.gain.cancelScheduledValues(AC.currentTime);
+    musBus.gain.setTargetAtTime(.0001, AC.currentTime, .18);
+  }
+
+  function setBgmVol(v){
+    bgmVol = v;
+    if (AC && musPlaying) musBus.gain.setTargetAtTime(Math.max(.0002, bgmVol * .9), AC.currentTime, .08);
+  }
+
+  document.addEventListener("visibilitychange", () => {
+    if (!AC) return;
+    if (document.hidden) AC.suspend();
+    else if (sfxOn || musPlaying) AC.resume();
+  });
+
+  /* ---------------- 物理 ---------------- */
+  function step(dt){
+    for (const f of fruits){
+      f.vy += GRAV * dt;
+      f.vx *= 0.9992; f.av *= 0.994;
+      const sp = Math.hypot(f.vx, f.vy);
+      if (sp > VMAX){ f.vx = f.vx/sp*VMAX; f.vy = f.vy/sp*VMAX; }
+      f.x += f.vx * dt; f.y += f.vy * dt;
+      f.a += f.av * dt;
+      f.age += dt;
+      if (f.pop > 0) f.pop = Math.max(0, f.pop - dt*4);
+    }
+    for (let k = 0; k < ITER; k++){
+      solvePairs();
+      solveWalls();
+    }
+  }
+
+  function solveWalls(){
+    for (const f of fruits){
+      // 左右墙 + 地板
+      const walls = [
+        { d: f.x - f.r,           n: [1, 0] },
+        { d: (W - f.r) - f.x,     n: [-1, 0] },
+        { d: (H - f.r) - f.y,     n: [0, -1] },
+      ];
+      for (const w of walls){
+        if (w.d >= 0) continue;
+        const nx = w.n[0], ny = w.n[1], pen = -w.d;
+        f.x += nx * pen; f.y += ny * pen;
+        // 接触点在 -n 方向（从质心指向墙面）
+        const rx = -nx * f.r, ry = -ny * f.r;
+        const cvx = f.vx - f.av * ry, cvy = f.vy + f.av * rx;
+        const vn = cvx*nx + cvy*ny;
+        if (vn < 0){
+          const jn = -(1 + REST) * vn / f.im;
+          f.vx += nx * jn * f.im; f.vy += ny * jn * f.im;
+          // 切向
+          let tvx = cvx - nx*vn, tvy = cvy - ny*vn;
+          const tl = Math.hypot(tvx, tvy);
+          if (tl > 1e-6){
+            tvx /= tl; tvy /= tl;
+            const rct = rx*tvy - ry*tvx;
+            const eff = f.im + rct*rct*f.ii;
+            let jt = -tl / eff;
+            const lim = MU * jn;
+            jt = Math.max(-lim, Math.min(lim, jt));
+            f.vx += tvx * jt * f.im; f.vy += tvy * jt * f.im;
+            f.av += rct * jt * f.ii;
+          }
+        }
+      }
+    }
+  }
+
+  function solvePairs(){
+    const n = fruits.length;
+    for (let i = 0; i < n; i++){
+      const a = fruits[i];
+      for (let j = i+1; j < n; j++){
+        const b = fruits[j];
+        let dx = b.x - a.x, dy = b.y - a.y;
+        const rr = a.r + b.r;
+        if (Math.abs(dx) > rr || Math.abs(dy) > rr) continue;
+        let d = Math.hypot(dx, dy);
+        if (d >= rr) continue;
+        if (d < 1e-6){ dx = 0; dy = -1; d = 1e-6; }
+        const nx = dx/d, ny = dy/d, pen = rr - d;
+
+        // 位置修正
+        const tim = a.im + b.im;
+        const corr = (pen / tim) * 0.7;
+        a.x -= nx * corr * a.im; a.y -= ny * corr * a.im;
+        b.x += nx * corr * b.im; b.y += ny * corr * b.im;
+
+        // 接触点相对向量
+        const rax = nx*a.r, ray = ny*a.r;
+        const rbx = -nx*b.r, rby = -ny*b.r;
+        const avx = a.vx - a.av*ray, avy = a.vy + a.av*rax;
+        const bvx = b.vx - b.av*rby, bvy = b.vy + b.av*rbx;
+        const rvx = bvx - avx, rvy = bvy - avy;
+        const vn = rvx*nx + rvy*ny;
+        if (vn > 0) continue;
+
+        const jn = -(1 + REST) * vn / tim;
+        a.vx -= nx*jn*a.im; a.vy -= ny*jn*a.im;
+        b.vx += nx*jn*b.im; b.vy += ny*jn*b.im;
+
+        let tvx = rvx - nx*vn, tvy = rvy - ny*vn;
+        const tl = Math.hypot(tvx, tvy);
+        if (tl > 1e-6){
+          tvx /= tl; tvy /= tl;
+          const rat = rax*tvy - ray*tvx;
+          const rbt = rbx*tvy - rby*tvx;
+          const eff = tim + rat*rat*a.ii + rbt*rbt*b.ii;
+          let jt = -tl / eff;
+          const lim = MU * jn;
+          jt = Math.max(-lim, Math.min(lim, jt));
+          a.vx -= tvx*jt*a.im; a.vy -= tvy*jt*a.im; a.av -= rat*jt*a.ii;
+          b.vx += tvx*jt*b.im; b.vy += tvy*jt*b.im; b.av += rbt*jt*b.ii;
+        }
+      }
+    }
+  }
+
+  /* ---------------- 合成 ---------------- */
+  function merges(){
+    const n = fruits.length;
+    let changed = false;
+    for (let i = 0; i < n; i++){
+      const a = fruits[i];
+      if (a.dead) continue;
+      for (let j = i+1; j < n; j++){
+        const b = fruits[j];
+        if (b.dead || b.lv !== a.lv) continue;
+        const dx = b.x - a.x, dy = b.y - a.y;
+        const rr = a.r + b.r + 1.5;
+        if (dx*dx + dy*dy > rr*rr) continue;
+        a.dead = b.dead = true; changed = true;
+
+        const mx = (a.x + b.x)/2, my = (a.y + b.y)/2;
+        const lv = a.lv;
+        if (lv === MAX){
+          // 两个大西瓜 → 一起消失，大分
+          addScore(200, mx, my, "+200");
+          burst(mx, my, F[MAX].c, 26, 1.5);
+          shake = Math.max(shake, 12);
+          beep(120, .5, "triangle", .22);
+          beep(240, .35, "sine", .12);
+        } else {
+          const nf = makeFruit(lv+1, mx, my, (a.vx+b.vx)/2*.5, (a.vy+b.vy)/2*.5 - 40);
+          nf.pop = 1;
+          fruits.push(nf);
+          const pts = ((lv+2)*(lv+3))/2;
+          addScore(pts, mx, my, "+" + pts);
+          burst(mx, my, F[lv].c, 10 + lv, 1);
+          shake = Math.max(shake, 2 + lv * .9);
+          beep(700 / (1 + lv*0.13), .16 + lv*.01, "sine", .14);
+          if (!seen[lv+1]){ seen[lv+1] = true; syncChain(lv+1); if (lv+1 >= 8) beep(880, .3, "triangle", .12); }
+        }
+        break;
+      }
+    }
+    if (changed) fruits = fruits.filter(f => !f.dead);
+  }
+
+  function addScore(p, x, y, txt){
+    score += p;
+    pops.push({ x, y, t: 0, txt });
+    if (score > best){
+      best = score;
+      try { localStorage.setItem("watermelon_best", String(best)); } catch(e){}
+    }
+    syncHUD();
+  }
+
+  function burst(x, y, color, count, power){
+    for (let i = 0; i < count; i++){
+      const ang = Math.random() * TAU;
+      const sp = (70 + Math.random()*230) * power;
+      particles.push({
+        x, y, vx: Math.cos(ang)*sp, vy: Math.sin(ang)*sp - 60,
+        r: 2 + Math.random()*4*power, life: .5 + Math.random()*.45, t: 0, color
+      });
+    }
+  }
+
+  /* ---------------- 投放 ---------------- */
+  function drop(){
+    if (over || cool > 0) return;
+    const r = F[pendingLv].r;
+    const x = Math.max(r + 2, Math.min(W - r - 2, aimX));
+    fruits.push(makeFruit(pendingLv, x, DROP_Y, 0, 40));
+    if (!seen[pendingLv]){ seen[pendingLv] = true; syncChain(pendingLv); }
+    pendingLv = nextLv; nextLv = randLevel();
+    cool = COOLDOWN;
+    beep(300, .07, "triangle", .08);
+    syncHUD();
+  }
+
+  function gameOver(){
+    over = true;
+    const top = seen.lastIndexOf(true);
+    document.getElementById("ovScore").textContent = score;
+    document.getElementById("ovSub").textContent = "最大合成到 " + F[Math.max(0, top)].n + " " + F[Math.max(0, top)].e;
+    overlay.classList.add("show");
+    beep(320, .3, "sawtooth", .1);
+    setTimeout(() => beep(200, .5, "sawtooth", .1), 130);
+  }
+
+  /* ---------------- 绘制 ---------------- */
+  function drawFruit(f, ghost){
+    const r = f.r;
+    const s = f.pop > 0 ? 1 + Math.sin(f.pop * Math.PI) * 0.16 : 1;
+    ctx.save();
+    ctx.translate(f.x, f.y);
+    ctx.scale(s, s);
+    ctx.rotate(f.a);
+    if (ghost) ctx.globalAlpha = .55;
+
+    const g = ctx.createRadialGradient(-r*.34, -r*.4, r*.08, 0, 0, r*1.05);
+    g.addColorStop(0, lighten(F[f.lv].c));
+    g.addColorStop(.62, F[f.lv].c);
+    g.addColorStop(1, darken(F[f.lv].c));
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, TAU);
+    if (!ghost){
+      ctx.shadowColor = "rgba(20,30,20,.22)";
+      ctx.shadowBlur = r*.34; ctx.shadowOffsetY = r*.13;
+    }
+    ctx.fillStyle = g; ctx.fill();
+    ctx.shadowColor = "transparent"; ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
+
+    ctx.save();
+    ctx.clip();
+    ctx.font = (r*1.86) + "px " + EMOJI_FONT;
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.globalAlpha *= .95;
+    ctx.fillText(F[f.lv].e, 0, r*0.03);
+    ctx.restore();
+
+    ctx.beginPath(); ctx.arc(0, 0, r - 0.5, 0, TAU);
+    ctx.lineWidth = Math.max(1, r*.05);
+    ctx.strokeStyle = "rgba(20,30,20,.14)"; ctx.stroke();
+
+    ctx.beginPath();
+    ctx.ellipse(-r*.33, -r*.44, r*.3, r*.17, -0.6, 0, TAU);
+    ctx.fillStyle = "rgba(255,255,255,.5)"; ctx.fill();
+    ctx.restore();
+  }
+
+  function render(){
+    const rect = jar.getBoundingClientRect();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, cv.width, cv.height);
+    const sx = shake > 0 ? (Math.random()-.5) * shake : 0;
+    const sy = shake > 0 ? (Math.random()-.5) * shake : 0;
+    ctx.setTransform(scale, 0, 0, scale, sx*scale, sy*scale);
+
+    // 死亡线
+    const warn = dangerT > 0;
+    ctx.save();
+    ctx.setLineDash([9, 8]);
+    ctx.lineWidth = warn ? 2.4 : 1.6;
+    ctx.lineDashOffset = -tick * 0.5;
+    ctx.strokeStyle = warn ? themeAccent : themeFaint;
+    ctx.globalAlpha = warn ? .55 + Math.sin(tick*.25)*.35 : 1;
+    ctx.beginPath(); ctx.moveTo(0, LINE_Y); ctx.lineTo(W, LINE_Y); ctx.stroke();
+    ctx.restore();
+
+    // 瞄准辅助线
+    if (!over){
+      const r = F[pendingLv].r;
+      const x = Math.max(r + 2, Math.min(W - r - 2, aimX));
+      ctx.save();
+      ctx.setLineDash([3, 9]);
+      ctx.lineWidth = 2; ctx.strokeStyle = themeFaint;
+      ctx.beginPath(); ctx.moveTo(x, DROP_Y + r); ctx.lineTo(x, H - 4); ctx.stroke();
+      ctx.restore();
+      if (cool <= 0) drawFruit({ x, y: DROP_Y, r, lv: pendingLv, a: 0, pop: 0 }, true);
+    }
+
+    for (const f of fruits) drawFruit(f, false);
+
+    // 粒子
+    for (const p of particles){
+      const k = 1 - p.t / p.life;
+      ctx.globalAlpha = Math.max(0, k);
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.r * (0.4 + k*0.6), 0, TAU);
+      ctx.fillStyle = p.color; ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+
+    // 分数飘字
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    for (const p of pops){
+      const k = 1 - p.t / 0.9;
+      ctx.globalAlpha = Math.max(0, k);
+      ctx.font = "700 22px " + getComputedStyle(document.body).fontFamily;
+      ctx.fillStyle = themeAccent;
+      ctx.fillText(p.txt, p.x, p.y - (1-k)*46);
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  /* ---------------- HUD ---------------- */
+  const overlay = document.getElementById("overlay");
+  const scoreVal = document.getElementById("scoreVal");
+  const bestVal = document.getElementById("bestVal");
+  const nextDisc = document.getElementById("nextDisc");
+  const nextName = document.getElementById("nextName");
+  const nextSub = document.getElementById("nextSub");
+  const chainEl = document.getElementById("chain");
+
+  F.forEach((f, i) => {
+    const li = document.createElement("li");
+    const size = 14 + i * 1.7;
+    li.innerHTML = `<span class="bead" style="width:${size}px;height:${size}px;font-size:${size*0.72}px">${f.e}</span>
+      <span class="nmx">${f.n}</span><span class="idx">${i+1}</span>`;
+    chainEl.appendChild(li);
+  });
+
+  function syncChain(justGot){
+    [...chainEl.children].forEach((li, i) => {
+      li.classList.toggle("got", seen[i]);
+      li.classList.toggle("new", i === justGot);
+    });
+    if (justGot != null){
+      setTimeout(() => chainEl.children[justGot]?.classList.remove("new"), 900);
+    }
+  }
+
+  function syncHUD(){
+    scoreVal.textContent = score;
+    bestVal.textContent = best;
+    nextDisc.textContent = F[nextLv].e;
+    nextDisc.style.background = mix(F[nextLv].c, [255,255,255], .72);
+    nextName.textContent = F[nextLv].n;
+    nextSub.textContent = "第 " + (nextLv+1) + " 级";
+    syncChain(null);
+  }
+
+  /* ---------------- 输入 ---------------- */
+  function toWorldX(clientX){
+    const rect = jar.getBoundingClientRect();
+    return ((clientX - rect.left) / rect.width) * W;
+  }
+  jar.addEventListener("pointermove", e => { if (!over) aimX = toWorldX(e.clientX); });
+  jar.addEventListener("pointerdown", e => { resumeAudio(); if (!over){ aimX = toWorldX(e.clientX); } });
+  jar.addEventListener("pointerup",   e => { if (!over){ aimX = toWorldX(e.clientX); drop(); } });
+  jar.addEventListener("pointercancel", () => {});
+
+  window.addEventListener("keydown", e => {
+    if (e.key === "ArrowLeft"){ resumeAudio(); aimX = Math.max(0, aimX - 22); e.preventDefault(); }
+    else if (e.key === "ArrowRight"){ resumeAudio(); aimX = Math.min(W, aimX + 22); e.preventDefault(); }
+    else if (e.key === " " || e.key === "Spacebar"){ resumeAudio(); drop(); e.preventDefault(); }
+    else if (e.key === "r" || e.key === "R"){ reset(); }
+  });
+
+  document.getElementById("restartBtn").addEventListener("click", reset);
+  document.getElementById("againBtn").addEventListener("click", reset);
+
+  const soundBtn = document.getElementById("soundBtn");
+  soundBtn.addEventListener("click", () => {
+    sfxOn = !sfxOn;
+    soundBtn.textContent = sfxOn ? "🔊 音效" : "🔇 音效";
+    soundBtn.setAttribute("aria-pressed", String(sfxOn));
+    soundBtn.classList.toggle("off", !sfxOn);
+    if (sfxOn) beep(520, .09, "sine", .1);
+  });
+
+  const musicBtn = document.getElementById("musicBtn");
+  musicBtn.addEventListener("click", () => {
+    bgmOn = !bgmOn;
+    musicBtn.textContent = bgmOn ? "🎵 音乐" : "🔕 音乐";
+    musicBtn.setAttribute("aria-pressed", String(bgmOn));
+    musicBtn.classList.toggle("off", !bgmOn);
+    if (bgmOn) resumeAudio(); else stopMusic();
+  });
+
+  const volRange = document.getElementById("volRange");
+  volRange.addEventListener("input", () => {
+    setBgmVol(volRange.value / 100);
+    if (bgmOn && !musPlaying) resumeAudio();
+  });
+  setBgmVol(volRange.value / 100);
+
+  /* ---------------- 主循环 ---------------- */
+  let last = performance.now(), acc = 0;
+  function frame(now){
+    let dt = (now - last) / 1000;
+    last = now;
+    if (dt > 0.25) dt = 0.25;
+    tick += dt * 60;
+
+    if (!over){
+      acc += dt;
+      let guard = 0;
+      while (acc >= DT && guard++ < 12){
+        step(DT);
+        acc -= DT;
+      }
+      merges();
+
+      if (cool > 0) cool -= dt;
+
+      // 危险判定：静止且越线的水果
+      let danger = false;
+      for (const f of fruits){
+        if (f.age > 0.9 && f.y - f.r < LINE_Y && Math.hypot(f.vx, f.vy) < 90){ danger = true; break; }
+      }
+      dangerT = danger ? dangerT + dt : Math.max(0, dangerT - dt * 2.5);
+      if (dangerT >= DANGER_LIMIT) gameOver();
+    }
+
+    // 特效更新
+    for (const p of particles){
+      p.t += dt; p.vy += 900 * dt; p.x += p.vx*dt; p.y += p.vy*dt; p.vx *= 0.985;
+    }
+    particles = particles.filter(p => p.t < p.life);
+    for (const p of pops) p.t += dt;
+    pops = pops.filter(p => p.t < 0.9);
+    shake = Math.max(0, shake - dt * 26);
+
+    render();
+    requestAnimationFrame(frame);
+  }
+
+  reset();
+  requestAnimationFrame(frame);
+})();
+</script>
+
+<style>
+  /* ---------- PWA / 触屏适配（置于主样式之后，优先级更高） ---------- */
+  html{ -webkit-text-size-adjust:100%; }
+  html, body{ overscroll-behavior:none; }
+  body{
+    -webkit-user-select:none; user-select:none;
+    -webkit-touch-callout:none;
+    -webkit-tap-highlight-color:transparent;
+    touch-action:manipulation;
+    min-height:100dvh;
+  }
+  /* 刘海屏安全区 */
+  .wrap{
+    padding-top:max(20px, env(safe-area-inset-top));
+    padding-bottom:max(28px, env(safe-area-inset-bottom));
+    padding-left:max(18px, env(safe-area-inset-left));
+    padding-right:max(18px, env(safe-area-inset-right));
+  }
+  /* 装到主屏后：说明文字让位给游戏区 */
+  @media (display-mode: standalone), (display-mode: fullscreen){
+    .howto .kbdline{ display:none; }
+    .wrap{ gap:12px; }
+    .jar{ height:min(66vh, 620px); }
+  }
+  /* 安装提示 / 更新提示 */
+  .ios-tip{
+    margin:0; padding:9px 12px; border:1px dashed var(--line); border-radius:10px;
+    font-size:12px; color:var(--ink-soft); text-align:center; line-height:1.6;
+  }
+  .ios-tip b{ color:var(--ink); font-weight:600; }
+  #installBtn{ width:100%; }
+  .toast{
+    position:fixed; left:50%; bottom:max(18px, env(safe-area-inset-bottom));
+    transform:translateX(-50%); z-index:50;
+    display:flex; align-items:center; gap:12px;
+    background:var(--panel); border:1px solid var(--line); border-radius:999px;
+    padding:9px 10px 9px 18px; font-size:13px; color:var(--ink);
+    box-shadow:0 10px 30px -12px rgba(0,0,0,.45);
+  }
+  .toast .btn{ padding:6px 14px; font-size:12px; }
+</style>
+
+<script>
+(() => {
+  "use strict";
+
+  /* ---------- Service Worker：离线可玩 + 新版本提醒 ---------- */
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("./sw.js").then((reg) => {
+        reg.addEventListener("updatefound", () => {
+          const nw = reg.installing;
+          if (!nw) return;
+          nw.addEventListener("statechange", () => {
+            if (nw.state === "installed" && navigator.serviceWorker.controller) toastUpdate();
+          });
+        });
+      }).catch(() => {});
+    });
+  }
+
+  function toastUpdate(){
+    if (document.querySelector(".toast")) return;
+    const t = document.createElement("div");
+    t.className = "toast";
+    t.innerHTML = '<span>有新版本</span><button class="btn primary">刷新</button>';
+    t.querySelector("button").addEventListener("click", () => location.reload());
+    document.body.appendChild(t);
+  }
+
+  /* ---------- 安装到主屏幕 ---------- */
+  const rail = document.querySelector(".rail");
+  let deferred = null;
+
+  window.addEventListener("beforeinstallprompt", (e) => {
+    e.preventDefault();
+    deferred = e;
+    if (document.getElementById("installBtn")) return;
+    const wrap = document.createElement("div");
+    wrap.className = "tools";
+    wrap.innerHTML = '<button class="btn primary" id="installBtn">📲 安装到主屏幕</button>';
+    rail.appendChild(wrap);
+    wrap.querySelector("button").addEventListener("click", async () => {
+      if (!deferred) return;
+      deferred.prompt();
+      const { outcome } = await deferred.userChoice;
+      if (outcome === "accepted") wrap.remove();
+      deferred = null;
+    });
+  });
+
+  window.addEventListener("appinstalled", () => {
+    document.getElementById("installBtn")?.closest(".tools")?.remove();
+  });
+
+  // iOS Safari 没有 beforeinstallprompt，只能给操作指引
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  const standalone = window.matchMedia("(display-mode: standalone)").matches ||
+    window.navigator.standalone === true;
+  if (isIOS && !standalone) {
+    const p = document.createElement("p");
+    p.className = "ios-tip";
+    p.innerHTML = '想全屏离线玩？点底部 <b>分享</b> → <b>添加到主屏幕</b>';
+    rail.appendChild(p);
+  }
+})();
+</script>
+
+</body>
+</html>
