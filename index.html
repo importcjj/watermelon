@@ -123,10 +123,11 @@
 
   .jar{
     position:relative;
-    aspect-ratio:440/620;
-    max-height:min(64vh,620px);
+    aspect-ratio:440/700;
     margin:0 auto;
-    width:auto; height:min(64vh,620px);
+    /* 高度取"竖向可用空间"和"横向能容下的宽度"的较小者，两个方向都不会溢出 */
+    height:min(66dvh, 660px, (100vw - 250px) * 700 / 440);
+    max-width:100%;
     border:3px solid var(--glass-edge);
     border-top-width:0;
     border-radius:4px 4px 30px 30px;
@@ -231,16 +232,47 @@
     border-bottom-width:2px; border-radius:5px; padding:1px 5px; color:var(--ink);
   }
 
+  /* ---- 手机竖屏 ---- */
   @media (max-width:720px){
-    .stage{grid-template-columns:1fr}
-    .jar{height:min(58vh,560px)}
-    .rail{flex-direction:row; flex-wrap:wrap}
-    .rail .card{flex:1 1 160px}
-    .chain{flex-direction:row; flex-wrap:wrap; gap:6px}
-    .chain li{padding:2px 6px 2px 2px; background:var(--panel-2)}
+    .wrap{gap:12px}
+    .stage{grid-template-columns:1fr; gap:12px}
+    /* 罐子吃掉除去头尾之后的全部竖向空间，宽度不超过屏宽 */
+    .jar{height:min(60dvh, (100vw - 40px) * 700 / 440)}
+    .masthead{align-items:center}
+    h1{font-size:26px}
+    .kicker{font-size:10px}
+    .score-card{padding:6px 12px; min-width:78px}
+    .score-card strong{font-size:18px}
+
+    .rail{flex-direction:row; flex-wrap:wrap; gap:10px}
+    .rail .card{flex:1 1 150px; padding:10px}
+    .next .disc{width:36px; height:36px; font-size:21px}
+    /* 合成链改成横向滚动条，不再占一大片竖向空间 */
+    .chain{flex-direction:row; flex-wrap:nowrap; gap:6px; overflow-x:auto;
+           scrollbar-width:none; padding-bottom:2px; -webkit-overflow-scrolling:touch}
+    .chain::-webkit-scrollbar{display:none}
+    .chain li{flex:none; padding:2px 8px 2px 3px; background:var(--panel-2); gap:5px}
+    .chain li .nmx{white-space:nowrap}
     .chain .idx{display:none}
     .tools{flex:1 1 100%}
+    .howto{font-size:11px; padding-top:10px}
   }
+
+  /* ---- 手机横屏：改成左右布局，别把罐子压扁 ---- */
+  @media (orientation:landscape) and (max-height:560px){
+    .wrap{padding-top:8px; padding-bottom:8px; gap:10px}
+    /* 标题让位，但分数必须留着 */
+    .masthead{justify-content:flex-end}
+    .masthead > div:first-child{display:none}
+    .score-card{padding:5px 11px; min-width:70px}
+    .score-card strong{font-size:16px}
+    .howto{display:none}
+    .stage{grid-template-columns:minmax(0,1fr) 190px; gap:12px}
+    .jar{height:min(92dvh, (100vw - 230px) * 700 / 440)}
+    .rail{flex-direction:column; gap:8px}
+    .chain{flex-direction:row; flex-wrap:wrap; gap:4px}
+  }
+
   @media (prefers-reduced-motion:reduce){
     *{transition-duration:.01ms !important}
   }
@@ -317,32 +349,32 @@
 
   /* ---------------- 水果定义 ---------------- */
   const F = [
-    { n:"葡萄",   r:20,  c:"#9B5DE5", e:"🍇" },
-    { n:"樱桃",   r:27,  c:"#E23F5A", e:"🍒" },
-    { n:"橘子",   r:35,  c:"#F5892B", e:"🍊" },
-    { n:"柠檬",   r:42,  c:"#F2D047", e:"🍋" },
-    { n:"猕猴桃", r:51,  c:"#8BBF4D", e:"🥝" },
-    { n:"西红柿", r:60,  c:"#E5402B", e:"🍅" },
-    { n:"桃子",   r:70,  c:"#F7A5A0", e:"🍑" },
-    { n:"菠萝",   r:82,  c:"#EFC13C", e:"🍍" },
-    { n:"椰子",   r:96,  c:"#D9C7A8", e:"🥥" },
-    { n:"半个瓜", r:112, c:"#A8D46A", e:"🍈" },
-    { n:"大西瓜", r:130, c:"#3FA34D", e:"🍉" },
+    { n:"葡萄",   r:18,  c:"#9B5DE5", e:"🍇" },
+    { n:"樱桃",   r:25,  c:"#E23F5A", e:"🍒" },
+    { n:"橘子",   r:32,  c:"#F5892B", e:"🍊" },
+    { n:"柠檬",   r:39,  c:"#F2D047", e:"🍋" },
+    { n:"猕猴桃", r:47,  c:"#8BBF4D", e:"🥝" },
+    { n:"西红柿", r:55,  c:"#E5402B", e:"🍅" },
+    { n:"桃子",   r:64,  c:"#F7A5A0", e:"🍑" },
+    { n:"菠萝",   r:75,  c:"#EFC13C", e:"🍍" },
+    { n:"椰子",   r:88,  c:"#D9C7A8", e:"🥥" },
+    { n:"半个瓜", r:103, c:"#A8D46A", e:"🍈" },
+    { n:"大西瓜", r:120, c:"#3FA34D", e:"🍉" },
   ];
   const MAX = F.length - 1;
   const EMOJI_FONT = '"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
 
   /* ---------------- 世界参数 ---------------- */
-  const W = 440, H = 620;      // 罐内坐标系
+  const W = 440, H = 700;      // 罐内坐标系（加高，堆叠空间 +13%）
   const GRAV = 1500;
   const REST = 0.10;           // 弹性
-  const MU   = 0.32;           // 摩擦
+  const MU   = 0.25;           // 摩擦（调低，水果更容易滑进空隙，堆得更密）
   const DT   = 1/120;
-  const ITER = 4;
-  const DROP_Y = 66;
-  const LINE_Y = 116;          // 死亡线
+  const ITER = 6;              // 约束迭代次数：越高堆叠越压实
+  const DROP_Y = 54;
+  const LINE_Y = 92;           // 死亡线（上移，可用高度 504 → 608）
   const COOLDOWN = 0.40;
-  const DANGER_LIMIT = 2.0;
+  const DANGER_LIMIT = 3.0;    // 越线后的救场时间
   const VMAX = 1900;
   const TAU = Math.PI * 2;
 
@@ -395,7 +427,8 @@
   try { best = parseInt(localStorage.getItem("watermelon_best") || "0", 10) || 0; } catch(e){}
 
   function randLevel(){
-    const pool = [0,0,0,1,1,1,2,2,3,4];
+    // 只投前 4 级，且大幅偏向小水果 —— 大水果一开局就占地方是"结束太快"的主因
+    const pool = [0,0,0,0,1,1,1,2,2,3];
     return pool[(Math.random()*pool.length)|0];
   }
 
@@ -612,6 +645,8 @@
       f.vx *= 0.9992; f.av *= 0.994;
       const sp = Math.hypot(f.vx, f.vy);
       if (sp > VMAX){ f.vx = f.vx/sp*VMAX; f.vy = f.vy/sp*VMAX; }
+      // 低速额外阻尼：抑制堆里的残余抖动，让果堆自己压实而不是虚浮着长高
+      if (sp < 30){ f.vx *= 0.90; f.vy *= 0.96; }
       f.x += f.vx * dt; f.y += f.vy * dt;
       f.a += f.av * dt;
       f.age += dt;
@@ -993,7 +1028,8 @@
       // 危险判定：静止且越线的水果
       let danger = false;
       for (const f of fruits){
-        if (f.age > 0.9 && f.y - f.r < LINE_Y && Math.hypot(f.vx, f.vy) < 90){ danger = true; break; }
+        // 只算"真正停下来"的水果：阈值放宽会把还在翻滚的误判成越线
+        if (f.age > 0.9 && f.y - f.r < LINE_Y && Math.hypot(f.vx, f.vy) < 45){ danger = true; break; }
       }
       dangerT = danger ? dangerT + dt : Math.max(0, dangerT - dt * 2.5);
       if (dangerT >= DANGER_LIMIT) gameOver();
@@ -1037,9 +1073,9 @@
   }
   /* 装到主屏后：说明文字让位给游戏区 */
   @media (display-mode: standalone), (display-mode: fullscreen){
-    .howto .kbdline{ display:none; }
+    .howto{ display:none; }          /* 装到主屏后不再需要说明，空间全给罐子 */
     .wrap{ gap:12px; }
-    .jar{ height:min(66vh, 620px); }
+    .jar{ height:min(68dvh, 700px, (100vw - 40px) * 700 / 440); }
   }
   /* 安装提示 / 更新提示 */
   .ios-tip{
