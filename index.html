@@ -120,6 +120,7 @@
 
   /* ---- stage ---- */
   .stage{display:grid; grid-template-columns:minmax(0,1fr) 176px; gap:18px; align-items:start}
+  .stage > *{min-width:0}   /* 防止子项被内容撑破网格轨道 */
 
   .jar{
     position:relative;
@@ -206,7 +207,8 @@
   .tools .btn{flex:1; padding:8px 10px; font-size:13px}
 
   .tog{display:flex; gap:6px}
-  .tog .btn{flex:1; padding:7px 4px; font-size:12px; font-weight:500}
+  .tog .btn{flex:1; padding:7px 4px; font-size:12px; font-weight:500;
+            display:inline-flex; align-items:center; justify-content:center; gap:5px}
   .btn.off{color:var(--ink-faint); background:var(--panel-2); text-decoration:line-through; text-decoration-thickness:1px}
   .vol{display:flex; align-items:center; gap:9px; margin-top:11px; font-size:10px;
        letter-spacing:.14em; color:var(--ink-faint)}
@@ -244,23 +246,54 @@
     .score-card{padding:6px 12px; min-width:78px}
     .score-card strong{font-size:18px}
 
-    .rail{flex-direction:row; flex-wrap:wrap; gap:10px}
-    .rail .card{flex:1 1 150px; padding:10px}
-    .next .disc{width:36px; height:36px; font-size:21px}
+    /* 右栏压成两条：控制行 + 合成链细条，把竖向空间尽量让给罐子 */
+    .rail{flex-direction:row; flex-wrap:wrap; align-items:stretch; gap:8px; min-width:0}
+    /* min-width:0 是关键：flex item 默认 min-width:auto，不加就会被内部
+       nowrap 的合成链撑到内容宽度，overflow-x:auto 完全不起作用 */
+    .rail .card{min-width:0; padding:8px 10px}
+    .card h2{display:none}
+
+    .card-next{flex:0 0 auto; display:flex; align-items:center}
+    .next{gap:9px}
+    .next .disc{width:32px; height:32px; font-size:19px}
+    .next .nm{font-size:14px}
+    .next .sub{display:none}
+
+    /* basis:0 让音量卡可以被压缩，三个控件才挤得进同一行 */
+    .card-audio{flex:1 1 0; min-width:0; display:flex; align-items:center; gap:10px}
+    .card-audio .tog{flex:0 0 auto}
+    .tog .btn{padding:7px 11px; font-size:15px}
+    .tog .lbl, .tools .lbl{display:none}   /* 窄屏只留图标/短词，保证控制行不换行 */
+    .vol{margin-top:0; flex:1 1 auto; min-width:42px; gap:0}
+    .vol span{display:none}
+
+    .tools{flex:0 0 auto}
+    .tools .btn{padding:8px 13px; white-space:nowrap}
+
+    .card-chain{order:9; flex:1 1 100%}
     /* 合成链改成横向滚动条，不再占一大片竖向空间 */
-    .chain{flex-direction:row; flex-wrap:nowrap; gap:6px; overflow-x:auto;
+    .chain{flex-direction:row; flex-wrap:nowrap; gap:6px; overflow-x:auto; min-width:0;
            scrollbar-width:none; padding-bottom:2px; -webkit-overflow-scrolling:touch}
     .chain::-webkit-scrollbar{display:none}
     .chain li{flex:none; padding:2px 8px 2px 3px; background:var(--panel-2); gap:5px}
     .chain li .nmx{white-space:nowrap}
     .chain .idx{display:none}
-    .tools{flex:1 1 100%}
     .howto{font-size:11px; padding-top:10px}
   }
 
-  /* ---- 手机横屏：改成左右布局，别把罐子压扁 ---- */
+  /* 触屏设备上键盘说明没有意义 */
+  @media (pointer:coarse){
+    .howto .kbdline{display:none}
+  }
+  /* 矮屏幕（如 iPhone SE）：说明整条让位给游戏区 */
+  @media (max-width:720px) and (max-height:700px){
+    .howto{display:none}
+    .wrap{gap:10px; padding-bottom:max(14px, env(safe-area-inset-bottom))}
+  }
+
+  /* ---- 手机横屏：左右布局，右栏必须极度压缩 ---- */
   @media (orientation:landscape) and (max-height:560px){
-    .wrap{padding-top:8px; padding-bottom:8px; gap:10px}
+    .wrap{padding-top:8px; padding-bottom:8px; gap:8px}
     /* 标题让位，但分数必须留着 */
     .masthead{justify-content:flex-end}
     .masthead > div:first-child{display:none}
@@ -268,9 +301,19 @@
     .score-card strong{font-size:16px}
     .howto{display:none}
     .stage{grid-template-columns:minmax(0,1fr) 190px; gap:12px}
-    .jar{height:min(92dvh, (100vw - 230px) * 700 / 440)}
-    .rail{flex-direction:column; gap:8px}
-    .chain{flex-direction:row; flex-wrap:wrap; gap:4px}
+    .rail{flex-direction:column; gap:8px; min-width:0; max-height:100%; overflow-y:auto}
+    .rail .card{padding:9px; min-width:0}
+    .card h2{display:none}          /* 横屏寸土寸金，省掉小标题 */
+    .next .disc{width:34px; height:34px; font-size:20px}
+    /* 合成链竖排会吃掉 300px，改成横向滚动条 */
+    .chain{flex-direction:row; flex-wrap:nowrap; gap:5px; overflow-x:auto; min-width:0;
+           scrollbar-width:none; -webkit-overflow-scrolling:touch}
+    .chain::-webkit-scrollbar{display:none}
+    .chain li{flex:none; padding:2px 7px 2px 3px; background:var(--panel-2); gap:5px}
+    .chain li .nmx{white-space:nowrap}
+    .chain .idx{display:none}
+    .tog .btn{padding:6px 4px}
+    .vol{margin-top:8px}
   }
 
   @media (prefers-reduced-motion:reduce){
@@ -303,7 +346,7 @@
     </div>
 
     <aside class="rail">
-      <section class="card">
+      <section class="card card-next">
         <h2>下一个</h2>
         <div class="next">
           <div class="disc" id="nextDisc">🍇</div>
@@ -314,16 +357,16 @@
         </div>
       </section>
 
-      <section class="card">
+      <section class="card card-chain">
         <h2>合成链</h2>
         <ul class="chain" id="chain"></ul>
       </section>
 
-      <section class="card">
+      <section class="card card-audio">
         <h2>声音</h2>
         <div class="tog">
-          <button class="btn" id="soundBtn" aria-pressed="true">🔊 音效</button>
-          <button class="btn" id="musicBtn" aria-pressed="true">🎵 音乐</button>
+          <button class="btn" id="soundBtn" aria-pressed="true" aria-label="音效开关"><span class="ico">🔊</span><span class="lbl">音效</span></button>
+          <button class="btn" id="musicBtn" aria-pressed="true" aria-label="背景音乐开关"><span class="ico">🎵</span><span class="lbl">音乐</span></button>
         </div>
         <label class="vol" for="volRange">
           <span>音量</span>
@@ -332,13 +375,13 @@
       </section>
 
       <div class="tools">
-        <button class="btn" id="restartBtn">重开一局</button>
+        <button class="btn" id="restartBtn">重开<span class="lbl">一局</span></button>
       </div>
     </aside>
   </main>
 
   <p class="howto">
-    移动鼠标或手指瞄准，松开投下 · 相同水果相撞会合成更大一级 · 堆过红线两秒就结束
+    移动鼠标或手指瞄准，松开投下 · 相同水果相撞会合成更大一级 · 堆过红线三秒就结束
     <span class="kbdline"><br>键盘：<kbd>←</kbd> <kbd>→</kbd> 移动 · <kbd>空格</kbd> 投放 · <kbd>R</kbd> 重开 · 首次点击后背景音乐自动响起</span>
   </p>
 </div>
@@ -984,7 +1027,7 @@
   const soundBtn = document.getElementById("soundBtn");
   soundBtn.addEventListener("click", () => {
     sfxOn = !sfxOn;
-    soundBtn.textContent = sfxOn ? "🔊 音效" : "🔇 音效";
+    soundBtn.querySelector(".ico").textContent = sfxOn ? "🔊" : "🔇";
     soundBtn.setAttribute("aria-pressed", String(sfxOn));
     soundBtn.classList.toggle("off", !sfxOn);
     if (sfxOn) beep(520, .09, "sine", .1);
@@ -993,7 +1036,7 @@
   const musicBtn = document.getElementById("musicBtn");
   musicBtn.addEventListener("click", () => {
     bgmOn = !bgmOn;
-    musicBtn.textContent = bgmOn ? "🎵 音乐" : "🔕 音乐";
+    musicBtn.querySelector(".ico").textContent = bgmOn ? "🎵" : "🔕";
     musicBtn.setAttribute("aria-pressed", String(bgmOn));
     musicBtn.classList.toggle("off", !bgmOn);
     if (bgmOn) resumeAudio(); else stopMusic();
@@ -1123,6 +1166,37 @@
     document.body.appendChild(t);
   }
 
+  /* ---------- 窄屏：把罐子撑满剩余竖向空间，整页刚好一屏 ---------- */
+  const jarEl = document.getElementById("jar");
+  const wrapEl = document.querySelector(".wrap");
+  const stageEl = document.querySelector(".stage");
+
+  function fitJar(){
+    const narrow = window.matchMedia("(max-width:720px)").matches;
+    const shortLand = window.matchMedia("(orientation:landscape) and (max-height:560px)").matches;
+    if (!narrow && !shortLand){
+      jarEl.style.removeProperty("height");
+      return;
+    }
+    // 先把罐子塌缩，再量真实布局高度。
+    // 注意不能用 documentElement.scrollHeight —— 它不会小于视口高度，永远算不出剩余空间。
+    jarEl.style.height = "0px";
+    const wrapH = wrapEl.getBoundingClientRect().height;
+    // 竖屏：右栏在罐子下方，占竖向空间；横屏：右栏并排，不占
+    const occupied = shortLand && !narrow
+      ? wrapH - stageEl.getBoundingClientRect().height
+      : wrapH;
+    const avail = window.innerHeight - occupied - 4;
+    const byWidth = jarEl.parentElement.clientWidth * 700 / 440;  // 宽度反推的高度上限
+    jarEl.style.height = Math.max(240, Math.min(avail, byWidth)) + "px";
+  }
+
+  const refit = () => requestAnimationFrame(fitJar);
+  window.addEventListener("resize", refit);
+  window.addEventListener("orientationchange", () => setTimeout(fitJar, 120));
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(refit);
+  refit();
+
   /* ---------- 安装到主屏幕 ---------- */
   const rail = document.querySelector(".rail");
   let deferred = null;
@@ -1135,11 +1209,12 @@
     wrap.className = "tools";
     wrap.innerHTML = '<button class="btn primary" id="installBtn">📲 安装到主屏幕</button>';
     rail.appendChild(wrap);
+    refit();
     wrap.querySelector("button").addEventListener("click", async () => {
       if (!deferred) return;
       deferred.prompt();
       const { outcome } = await deferred.userChoice;
-      if (outcome === "accepted") wrap.remove();
+      if (outcome === "accepted"){ wrap.remove(); refit(); }
       deferred = null;
     });
   });
@@ -1158,6 +1233,7 @@
     p.className = "ios-tip";
     p.innerHTML = '想全屏离线玩？点底部 <b>分享</b> → <b>添加到主屏幕</b>';
     rail.appendChild(p);
+    refit();   // 提示条改变了页面高度，重新分配罐子空间
   }
 })();
 </script>
