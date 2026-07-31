@@ -203,12 +203,19 @@
     background:var(--panel); border:1px solid var(--line); border-bottom:0;
     border-radius:22px 22px 0 0;
     padding:8px 18px max(18px,env(safe-area-inset-bottom));
+    /* 内容变多后必须限高可滚，否则会顶出视口 */
+    max-height:88dvh; overflow-y:auto; overscroll-behavior:contain;
+    -webkit-overflow-scrolling:touch;
     transform:translateY(103%);
     transition:transform .3s cubic-bezier(.32,.72,0,1);
     box-shadow:0 -24px 60px -30px rgba(0,0,0,.55);
   }
   .sheet.open{transform:none}
-  .grabber{width:38px; height:4px; border-radius:99px; background:var(--line); margin:0 auto 10px}
+  .grabber{
+    width:38px; height:4px; border-radius:99px; background:var(--line);
+    margin:0 auto 10px; position:sticky; top:0; z-index:2;
+  }
+  .sheet::-webkit-scrollbar{width:0}
   .sheet h2{
     font-family:var(--display); font-size:18px; margin:0 0 2px;
   }
@@ -272,6 +279,78 @@
   }
   .ios-tip b{color:var(--ink); font-weight:600}
 
+  /* ---------- 道具条 ---------- */
+  .items{display:flex; gap:7px; flex:none}
+  .item{
+    flex:1; position:relative; display:flex; align-items:center; justify-content:center; gap:6px;
+    background:var(--panel); border:1px solid var(--line); border-radius:12px;
+    padding:9px 6px; cursor:pointer; font-family:inherit; color:var(--ink);
+    transition:background .15s ease, border-color .15s ease, opacity .2s ease;
+  }
+  .item svg{width:17px; height:17px; flex:none; opacity:.85}
+  .item[aria-pressed="true"] svg{opacity:1}
+  .item b{font-size:13px; font-weight:600}
+  .item i{
+    font-style:normal; font-family:var(--mono); font-size:10px; font-weight:600;
+    min-width:17px; height:17px; padding:0 4px; border-radius:99px;
+    background:var(--panel-2); color:var(--ink-soft);
+    display:grid; place-items:center;
+  }
+  .item:hover{background:var(--panel-2)}
+  .item:active{transform:translateY(1px)}
+  .item:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+  .item[aria-pressed="true"]{background:var(--accent); border-color:var(--accent); color:#fff}
+  .item[aria-pressed="true"] i{background:rgba(255,255,255,.25); color:#fff}
+  .item[disabled]{opacity:.38; pointer-events:none}
+
+  /* ---------- 达成横幅 ---------- */
+  .banner{
+    position:absolute; left:50%; top:16%; z-index:6;
+    transform:translate(-50%, -14px) scale(.94); opacity:0; pointer-events:none;
+    display:flex; align-items:center; gap:11px;
+    background:var(--panel); border:1px solid var(--accent-2); border-radius:16px;
+    padding:11px 18px 11px 13px;
+    box-shadow:0 14px 40px -16px rgba(0,0,0,.5);
+    transition:opacity .32s ease, transform .32s cubic-bezier(.32,.72,0,1);
+  }
+  .banner.show{opacity:1; transform:translate(-50%, 0) scale(1)}
+  .banner img{width:40px; height:40px; display:block}
+  .banner b{display:block; font-family:var(--display); font-size:17px; line-height:1.25}
+  .banner span{display:block; font-size:11px; color:var(--ink-faint); font-variant-numeric:tabular-nums}
+
+  /* ---------- 连击指示 ---------- */
+  .combo{
+    position:absolute; right:10px; top:10px; z-index:6;
+    min-width:70px; padding:7px 11px 8px; border-radius:13px;
+    background:color-mix(in srgb, var(--accent) 92%, transparent); color:#fff;
+    text-align:center; opacity:0; transform:scale(.8);
+    transition:opacity .18s ease, transform .18s cubic-bezier(.32,.72,0,1);
+    pointer-events:none;
+  }
+  .combo.show{opacity:1; transform:scale(1)}
+  .combo b{display:block; font-family:var(--mono); font-size:22px; font-weight:700; line-height:1}
+  .combo span{display:block; font-size:9px; letter-spacing:.2em; opacity:.85; margin-top:1px}
+  .combo i{
+    display:block; height:3px; border-radius:99px; background:rgba(255,255,255,.85);
+    margin-top:5px; transform-origin:left center;
+  }
+
+  /* ---------- 成就列表 ---------- */
+  .achs{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:6px}
+  .achs li{
+    display:flex; align-items:center; gap:10px; padding:8px 11px; border-radius:11px;
+    background:var(--panel-2); opacity:.5; transition:opacity .3s ease;
+  }
+  .achs li.got{opacity:1}
+  .achs .medal{
+    flex:none; width:26px; height:26px; border-radius:50%; display:grid; place-items:center;
+    background:var(--line); color:var(--ink-faint);
+  }
+  .achs li.got .medal{background:var(--accent-2); color:#3A2708}
+  .achs .medal svg{width:15px; height:15px}
+  .achs .txt b{display:block; font-size:13px; font-weight:600}
+  .achs .txt span{display:block; font-size:11px; color:var(--ink-faint)}
+
   .toast{
     position:fixed; left:50%; bottom:max(18px, env(safe-area-inset-bottom));
     transform:translateX(-50%); z-index:40;
@@ -288,6 +367,7 @@
   @media (orientation:landscape) and (max-height:520px){
     .app{max-width:none; gap:7px}
     .chainbar{display:none}
+    .items{position:absolute; left:12px; bottom:10px; width:170px; flex-direction:column}
     .stat{padding:4px 10px; min-width:64px}
     .stat strong{font-size:16px}
     .nextchip img{width:26px; height:26px}
@@ -315,6 +395,13 @@
 
   <div class="jar" id="jar">
     <canvas id="game"></canvas>
+    <div class="banner" id="banner" aria-live="polite">
+      <img id="bannerIcon" alt="">
+      <div><b id="bannerTitle">达成 大西瓜</b><span id="bannerSub"></span></div>
+    </div>
+
+    <div class="combo" id="combo"><b id="comboN">2</b><span>连击</span><i id="comboBar"></i></div>
+
     <div class="overlay" id="overlay" role="alertdialog" aria-modal="true">
       <img class="trophy" id="ovTrophy" alt="">
       <p class="big" id="ovTitle">水果溢出罐子了</p>
@@ -322,6 +409,12 @@
       <p id="ovSub">最大合成到 葡萄</p>
       <p style="margin-top:16px"><button class="btn primary" id="againBtn">再来一局</button></p>
     </div>
+  </div>
+
+  <div class="items" id="items">
+    <button class="item" id="itemUndo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 9.5h10a5 5 0 0 1 0 10H9"/><path d="M8.5 5.5l-4 4 4 4"/></svg><b>撤销</b><i>1</i></button>
+    <button class="item" id="itemShake"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2" fill="currentColor" stroke-width="1.4"/><path d="M6.1 7.4C4.3 9.6 4.3 14.4 6.1 16.6"/><path d="M17.9 7.4c1.8 2.2 1.8 7 0 9.2"/></svg><b>摇一摇</b><i>1</i></button>
+    <button class="item" id="itemHammer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.6 2.6l8.8 8.8-3.4 3.4-8.8-8.8z" fill="currentColor" stroke-width="1.6"/><path d="M9.4 10.2l-5.6 5.6a1.7 1.7 0 0 0 0 2.4l1.6 1.6a1.7 1.7 0 0 0 2.4 0l5.6-5.6"/></svg><b>锤子</b><i>1</i></button>
   </div>
 
   <div class="chainbar"><ul class="chain" id="chain"></ul></div>
@@ -335,8 +428,21 @@
   <p class="sub">合成大西瓜 · 自研物理引擎</p>
 
   <div class="row stack">
+    <span class="lb">模式<span class="hint" id="modeHint">自由练习，随时重开</span></span>
+    <div class="seg" id="modeSeg" role="group" aria-label="模式">
+      <button type="button" aria-pressed="true">普通</button>
+      <button type="button" aria-pressed="false">每日挑战</button>
+    </div>
+  </div>
+
+  <div class="row stack" id="diffRow">
     <span class="lb">难度<span class="hint" id="diffHint">默认平衡，适合大多数人</span></span>
     <div class="seg" id="diffSeg" role="group" aria-label="难度"></div>
+  </div>
+
+  <div class="row stack">
+    <span class="lb">成就<span class="hint" id="achHint">0 / 7</span></span>
+    <ul class="achs" id="achs"></ul>
   </div>
 
   <div class="row">
@@ -354,7 +460,8 @@
 
   <p class="howto">
     移动手指或鼠标瞄准，松开投下 · 相同水果相撞合成更大一级 · 堆过红线三秒结束
-    <span class="kbdline"><br><kbd>←</kbd> <kbd>→</kbd> 移动 · <kbd>空格</kbd> 投放 · <kbd>R</kbd> 重开</span>
+    <br>1.25 秒内连续合成触发连击，最高 ×5 倍分 · 大西瓜两两相撞会一起消失并加大分
+    <span class="kbdline"><br><kbd>←</kbd> <kbd>→</kbd> 移动 · <kbd>空格</kbd> 投放 · <kbd>R</kbd> 重开 · <kbd>Z</kbd> 撤销 · <kbd>X</kbd> 摇一摇 · <kbd>C</kbd> 锤子</span>
   </p>
 
   <div class="sheet-actions" id="sheetActions">
@@ -453,6 +560,34 @@
   let seen = new Array(F.length).fill(false);
   let uid = 1;
 
+  /* 连击 / 道具 / 每日挑战 / 成就 */
+  const COMBO_WIN = 1.25;          // 连击窗口（秒）
+  let combo = 0, comboT = 0, comboBest = 0;
+  let items = { undo: 1, shake: 1, hammer: 1 };
+  let hammerMode = false, usedItem = false;
+  let undoSnap = null;
+  let drops = 0, melons = 0, playT = 0;
+  let dailyMode = false;
+
+  // 每日挑战要求所有人拿到相同的出果序列，所以凡是影响玩法的随机都走 rng()
+  let rng = Math.random;
+  function mulberry32(a){
+    return function(){
+      a = a + 0x6D2B79F5 | 0;
+      let t = Math.imul(a ^ a >>> 15, 1 | a);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+  function todaySeed(){
+    const d = new Date();
+    return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+  }
+  function todayLabel(){
+    const d = new Date();
+    return (d.getMonth() + 1) + " 月 " + d.getDate() + " 日";
+  }
+
   try { best = parseInt(localStorage.getItem("watermelon_best") || "0", 10) || 0; } catch(e){}
 
   /* ---------------- 难度 ----------------
@@ -493,17 +628,22 @@
 
   function randLevel(){
     const pool = DIFFS[diffIdx].pool;
-    return pool[(Math.random()*pool.length)|0];
+    return pool[(rng()*pool.length)|0];
   }
 
   function reset(){
     fruits = []; particles = []; pops = [];
     score = 0; dangerT = 0; over = false; cool = 0; shake = 0;
     seen = new Array(F.length).fill(false);
+    combo = 0; comboT = 0; comboBest = 0;
+    items = { undo: 1, shake: 1, hammer: 1 };
+    hammerMode = false; usedItem = false; undoSnap = null;
+    drops = 0; melons = 0; playT = 0;
+    rng = dailyMode ? mulberry32(todaySeed()) : Math.random;
     pendingLv = randLevel(); nextLv = randLevel();
     aimX = W/2;
     overlay.classList.remove("show");
-    syncHUD();
+    hideBanner(); syncCombo(); syncItems(); syncHUD();
   }
 
   const rad = lv => F[lv].r * RS;
@@ -851,7 +991,8 @@
         const lv = a.lv;
         if (lv === MAX){
           // 两个大西瓜 → 一起消失，大分
-          addScore(200, mx, my, "+200");
+          bumpCombo();
+          addScore(Math.round(200 * comboMult()), mx, my, "+" + Math.round(200 * comboMult()));
           burst(mx, my, F[MAX].c, 26, 1.5);
           shake = Math.max(shake, 12);
           beep(120, .5, "triangle", .22);
@@ -860,11 +1001,19 @@
           const nf = makeFruit(lv+1, mx, my, (a.vx+b.vx)/2*.5, (a.vy+b.vy)/2*.5 - 40);
           nf.pop = 1;
           fruits.push(nf);
-          const pts = ((lv+2)*(lv+3))/2;
+          bumpCombo();
+          const pts = Math.round(((lv+2)*(lv+3))/2 * comboMult());
           addScore(pts, mx, my, "+" + pts);
           burst(mx, my, F[lv].c, 10 + lv, 1);
           shake = Math.max(shake, 2 + lv * .9);
           beep(700 / (1 + lv*0.13), .16 + lv*.01, "sine", .14);
+          if (lv + 1 === MAX){
+            melons++;
+            if (melons === 1) celebrateMelon();
+            if (melons >= 3) unlock("farmer");
+            if (!usedItem) unlock("pure");
+            if (fruits.filter(f => f.lv === MAX && !f.dead).length >= 2) unlock("double");
+          }
           if (!seen[lv+1]){ seen[lv+1] = true; syncChain(lv+1); if (lv+1 >= 8) beep(880, .3, "triangle", .12); }
         }
         break;
@@ -875,6 +1024,7 @@
 
   function addScore(p, x, y, txt){
     score += p;
+    if (score >= 1000) unlock("score1k");
     pops.push({ x, y, t: 0, txt });
     if (score > best){
       best = score;
@@ -897,11 +1047,13 @@
   /* ---------------- 投放 ---------------- */
   function drop(){
     if (over || cool > 0) return;
+    snapshot();
+    drops++;
     const r = rad(pendingLv);
     const x = Math.max(r + 2, Math.min(W - r - 2, aimX));
-    const jitter = (Math.random() - .5) * r * .10;   // 微小落点抖动，天然打散叠柱
+    const jitter = (rng() - .5) * r * .10;   // 微小落点抖动，天然打散叠柱
     const nf = makeFruit(pendingLv, Math.max(r + 2, Math.min(W - r - 2, x + jitter)), DROP_Y, 0, 40);
-    nf.av = (Math.random() - .5) * 1.2;
+    nf.av = (rng() - .5) * 1.2;
     fruits.push(nf);
     if (!seen[pendingLv]){ seen[pendingLv] = true; syncChain(pendingLv); }
     pendingLv = nextLv; nextLv = randLevel();
@@ -917,6 +1069,14 @@
     document.getElementById("ovSub").textContent = "最大合成到 " + F[top].n +
       (score >= best ? " · 新纪录" : "");
     document.getElementById("ovTrophy").src = fruitIcon(top, 56);
+    if (dailyMode){
+      unlock("daily");
+      try {
+        if (score > dailyBest()) localStorage.setItem(dailyKey(), String(score));
+      } catch(e){}
+      syncMode();
+    }
+    hammerMode = false; syncItems();
     overlay.classList.add("show");
     beep(320, .3, "sawtooth", .1);
     setTimeout(() => beep(200, .5, "sawtooth", .1), 130);
@@ -1420,9 +1580,17 @@
     const rect = jar.getBoundingClientRect();
     return ((clientX - rect.left) / rect.width) * W;
   }
+  function toWorldY(clientY){
+    const rect = jar.getBoundingClientRect();
+    return ((clientY - rect.top) / rect.height) * H;
+  }
   jar.addEventListener("pointermove", e => { if (!over) aimX = toWorldX(e.clientX); });
   jar.addEventListener("pointerdown", e => { resumeAudio(); if (!over){ aimX = toWorldX(e.clientX); } });
-  jar.addEventListener("pointerup",   e => { if (!over){ aimX = toWorldX(e.clientX); drop(); } });
+  jar.addEventListener("pointerup",   e => {
+    if (over) return;
+    if (hammerMode){ hammerAt(toWorldX(e.clientX), toWorldY(e.clientY)); return; }
+    aimX = toWorldX(e.clientX); drop();
+  });
   jar.addEventListener("pointercancel", () => {});
 
   window.addEventListener("keydown", e => {
@@ -1430,6 +1598,9 @@
     else if (e.key === "ArrowRight"){ resumeAudio(); aimX = Math.min(W, aimX + 22); e.preventDefault(); }
     else if (e.key === " " || e.key === "Spacebar"){ resumeAudio(); drop(); e.preventDefault(); }
     else if (e.key === "r" || e.key === "R"){ reset(); }
+    else if (e.key === "z" || e.key === "Z"){ doUndo(); }
+    else if (e.key === "x" || e.key === "X"){ doShake(); }
+    else if (e.key === "c" || e.key === "C"){ toggleHammer(); }
   });
 
   document.getElementById("againBtn").addEventListener("click", reset);
@@ -1507,6 +1678,217 @@
   });
   setBgmVol(volRange.value / 100);
 
+
+  /* ================= 连击 ================= */
+  const comboEl = document.getElementById("combo");
+  const comboN  = document.getElementById("comboN");
+  const comboBar= document.getElementById("comboBar");
+
+  function comboMult(){ return Math.min(5, 1 + Math.max(0, combo - 1) * 0.5); }
+
+  function bumpCombo(){
+    combo = comboT > 0 ? combo + 1 : 1;
+    comboT = COMBO_WIN;
+    if (combo > comboBest) comboBest = combo;
+    if (combo >= 5) unlock("combo5");
+    if (combo >= 2){
+      beep(520 + Math.min(combo, 8) * 60, .12, "square", .07);
+      pops.push({ x: W/2, y: LINE_Y + 60, t: 0, txt: combo + " 连击 ×" + comboMult().toFixed(1) });
+    }
+    syncCombo();
+  }
+
+  function syncCombo(){
+    const on = combo >= 2 && comboT > 0;
+    comboEl.classList.toggle("show", on);
+    if (on){
+      comboN.textContent = combo;
+      comboBar.style.transform = "scaleX(" + (comboT / COMBO_WIN).toFixed(3) + ")";
+    }
+  }
+
+  /* ================= 道具 ================= */
+  const itemEls = {
+    undo:   document.getElementById("itemUndo"),
+    shake:  document.getElementById("itemShake"),
+    hammer: document.getElementById("itemHammer"),
+  };
+
+  function syncItems(){
+    for (const k in itemEls){
+      const el = itemEls[k];
+      el.querySelector("i").textContent = items[k];
+      el.disabled = items[k] <= 0 || over;
+      el.setAttribute("aria-pressed", String(k === "hammer" && hammerMode));
+    }
+  }
+
+  // 撤销：投放前存一份浅拷贝快照
+  function snapshot(){
+    undoSnap = {
+      fruits: fruits.map(f => ({ ...f })),
+      score, seen: seen.slice(), pendingLv, nextLv, melons, uid, drops,
+    };
+  }
+
+  function doUndo(){
+    if (!undoSnap || items.undo <= 0 || over) return;
+    items.undo--; usedItem = true;
+    fruits = undoSnap.fruits.map(o => ({ ...o }));
+    score = undoSnap.score; seen = undoSnap.seen.slice();
+    pendingLv = undoSnap.pendingLv; nextLv = undoSnap.nextLv;
+    melons = undoSnap.melons; uid = undoSnap.uid; drops = undoSnap.drops;
+    undoSnap = null;
+    dangerT = 0; combo = 0; comboT = 0; cool = COOLDOWN;
+    beep(360, .18, "triangle", .12);
+    syncCombo(); syncItems(); syncHUD();
+  }
+
+  function doShake(){
+    if (items.shake <= 0 || over) return;
+    items.shake--; usedItem = true;
+    for (const f of fruits){
+      f.vx += (rng() - .5) * 300;
+      f.vy -= rng() * 180;
+      f.av += (rng() - .5) * 5;
+    }
+    shake = Math.max(shake, 16);
+    beep(150, .28, "sawtooth", .13);
+    setTimeout(() => beep(190, .2, "sawtooth", .09), 90);
+    syncItems();
+  }
+
+  function toggleHammer(){
+    if (items.hammer <= 0 || over) return;
+    hammerMode = !hammerMode;
+    syncItems();
+    if (hammerMode) beep(700, .07, "square", .08);
+  }
+
+  function hammerAt(wx, wy){
+    let hit = null;
+    for (let i = fruits.length - 1; i >= 0; i--){
+      const f = fruits[i];
+      if ((f.x - wx) ** 2 + (f.y - wy) ** 2 <= f.r * f.r){ hit = f; break; }
+    }
+    hammerMode = false;
+    syncItems();
+    if (!hit) return;
+    items.hammer--; usedItem = true;
+    burst(hit.x, hit.y, F[hit.lv].c, 18, 1.2);
+    shake = Math.max(shake, 8);
+    beep(240, .2, "square", .14);
+    fruits = fruits.filter(f => f !== hit);
+    syncItems();
+  }
+
+  itemEls.undo.addEventListener("click", doUndo);
+  itemEls.shake.addEventListener("click", doShake);
+  itemEls.hammer.addEventListener("click", toggleHammer);
+
+  /* ================= 首次合成大西瓜 ================= */
+  const bannerEl = document.getElementById("banner");
+  let bannerTimer = null;
+
+  function showBanner(title, sub, iconLv){
+    document.getElementById("bannerTitle").textContent = title;
+    document.getElementById("bannerSub").textContent = sub || "";
+    const img = document.getElementById("bannerIcon");
+    if (iconLv == null) img.style.display = "none";
+    else { img.style.display = "block"; img.src = fruitIcon(iconLv, 40); }
+    bannerEl.classList.add("show");
+    clearTimeout(bannerTimer);
+    bannerTimer = setTimeout(hideBanner, 3200);
+  }
+  function hideBanner(){ bannerEl.classList.remove("show"); }
+
+  function celebrateMelon(){
+    unlock("melon");
+    const mm = String(Math.floor(playT / 60)).padStart(2, "0");
+    const ss = String(Math.floor(playT % 60)).padStart(2, "0");
+    showBanner("达成 大西瓜！", "第 " + drops + " 次投放 · 用时 " + mm + ":" + ss, MAX);
+    try {
+      const prev = parseInt(localStorage.getItem("watermelon_fastest") || "0", 10);
+      if (!prev || drops < prev) localStorage.setItem("watermelon_fastest", String(drops));
+    } catch(e){}
+    // 礼花
+    for (let i = 0; i < 5; i++){
+      setTimeout(() => burst(W * (0.15 + 0.7 * Math.random()), LINE_Y + 80 + Math.random() * 120,
+        F[[10, 5, 3, 7, 0][i]].c, 22, 1.4), i * 110);
+    }
+    shake = Math.max(shake, 14);
+    [0, 4, 7, 12].forEach((semi, i) =>
+      setTimeout(() => beep(392 * Math.pow(2, semi / 12), .45, "triangle", .13), i * 130));
+  }
+
+  /* ================= 成就 ================= */
+  const ACHS = [
+    { k:"melon",  n:"瓜熟蒂落",   d:"首次合成大西瓜" },
+    { k:"double", n:"双瓜同框",   d:"场上同时存在两个大西瓜" },
+    { k:"farmer", n:"瓜田老手",   d:"单局合成三个大西瓜" },
+    { k:"combo5", n:"连击大师",   d:"达成 5 连击" },
+    { k:"pure",   n:"徒手开瓜",   d:"不用任何道具合成大西瓜" },
+    { k:"score1k",n:"千分达人",   d:"单局得分超过 1000" },
+    { k:"daily",  n:"每日一瓜",   d:"完成一次每日挑战" },
+  ];
+  let achs = {};
+  try { achs = JSON.parse(localStorage.getItem("watermelon_achs") || "{}") || {}; } catch(e){}
+
+  const achsEl = document.getElementById("achs");
+  ACHS.forEach(a => {
+    const li = document.createElement("li");
+    li.innerHTML = '<span class="medal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"' +
+      ' stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+      '<circle cx="12" cy="9" r="5.4"/><path d="M8.4 13.6L7 21l5-2.6L17 21l-1.4-7.4"/></svg></span>' +
+      '<span class="txt"><b>' + a.n + '</b><span>' + a.d + '</span></span>';
+    achsEl.appendChild(li);
+  });
+
+  function syncAchs(){
+    ACHS.forEach((a, i) => achsEl.children[i].classList.toggle("got", !!achs[a.k]));
+    document.getElementById("achHint").textContent =
+      ACHS.filter(a => achs[a.k]).length + " / " + ACHS.length;
+  }
+
+  function unlock(k){
+    if (achs[k]) return;
+    achs[k] = 1;
+    try { localStorage.setItem("watermelon_achs", JSON.stringify(achs)); } catch(e){}
+    syncAchs();
+    const a = ACHS.find(x => x.k === k);
+    if (a) setTimeout(() => showBanner("成就解锁 · " + a.n, a.d, null), 900);
+  }
+  syncAchs();
+
+  /* ================= 每日挑战 ================= */
+  const modeSeg = document.getElementById("modeSeg");
+  const modeHint = document.getElementById("modeHint");
+  const diffRow = document.getElementById("diffRow");
+
+  function dailyKey(){ return "watermelon_daily_" + todaySeed(); }
+  function dailyBest(){
+    try { return parseInt(localStorage.getItem(dailyKey()) || "0", 10) || 0; } catch(e){ return 0; }
+  }
+
+  function syncMode(){
+    [...modeSeg.children].forEach((b, i) => b.setAttribute("aria-pressed", String(!!i === dailyMode)));
+    modeHint.textContent = dailyMode
+      ? todayLabel() + " · 全网同一套出果序列 · 今日最佳 " + dailyBest()
+      : "自由练习，随时重开";
+    // 每日挑战锁定标准难度，保证可比性
+    diffRow.style.display = dailyMode ? "none" : "";
+  }
+
+  [...modeSeg.children].forEach((b, i) => b.addEventListener("click", () => {
+    const want = !!i;
+    if (want === dailyMode) return;
+    dailyMode = want;
+    if (dailyMode){ diffIdx = 1; applyDiff(); syncDiffUI(); }
+    syncMode(); reset(); closeSheet();
+    beep(560, .09, "sine", .1);
+  }));
+  syncMode();
+
   /* ---------------- 主循环 ---------------- */
   let last = performance.now(), acc = 0;
   function frame(now){
@@ -1516,6 +1898,12 @@
     tick += dt * 60;
 
     if (!over){
+      playT += dt;
+      if (comboT > 0){
+        comboT = Math.max(0, comboT - dt);
+        if (comboT === 0){ combo = 0; syncCombo(); }
+        else if (combo >= 2) syncCombo();
+      }
       acc += dt;
       let guard = 0;
       while (acc >= DT && guard++ < 12){
