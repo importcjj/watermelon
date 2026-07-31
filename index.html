@@ -388,7 +388,8 @@
   let   H = 700;      // 罐内坐标系（加高，堆叠空间 +13%）
   const GRAV = 1500;
   const REST = 0.10;           // 弹性
-  const MU   = 0.25;           // 摩擦（调低，水果更容易滑进空隙，堆得更密）
+  const MU   = 0.55;           // 摩擦。太低会让堆里大量接触长期处于滑动极限，
+                               // 每帧微滑产生力矩，静止的水果也会一直缓慢自转。
   const DT   = 1/120;
   const ITER = 6;              // 约束迭代次数：越高堆叠越压实
   const DROP_Y = 54;
@@ -396,6 +397,8 @@
   const COOLDOWN = 0.40;
   let   DANGER_LIMIT = 3.0;    // 越线后的救场时间（随难度调整）
   const VMAX = 1900;
+  const SLOP = 0.5;      // 允许的穿透容差
+  const REST_CUT = 45;   // 低于此接近速度不计弹性，否则微碰撞会不断注入能量
   const TAU = Math.PI * 2;
 
   /* ---------------- 画布 ---------------- */
@@ -711,6 +714,13 @@
       // 低速阻尼只压竖向残抖。之前横向也乘 0.90，等于把"要倒不倒"的微小侧移
       // 全部抹掉，导致三个水果能正正叠成一柱稳稳站住。
       if (sp < 22){ f.vx *= 0.985; f.vy *= 0.96; }
+      // 角速度死区：果堆永远存在微小抖动，接触摩擦每帧都把它转成力矩，
+      // 常规指数阻尼压不住这种持续再生，静止的水果会一直缓慢自转。
+      // 低速时对自转做强阻尼并直接归零。
+      if (sp < 26 && Math.abs(f.av) < 1.2){
+        f.av *= 0.90;
+        if (Math.abs(f.av) < 0.05) f.av = 0;
+      }
       f.x += f.vx * dt; f.y += f.vy * dt;
       f.a += f.av * dt;
       f.age += dt;
@@ -733,13 +743,15 @@
       for (const w of walls){
         if (w.d >= 0) continue;
         const nx = w.n[0], ny = w.n[1], pen = -w.d;
-        f.x += nx * pen; f.y += ny * pen;
+        const push = Math.max(0, pen - SLOP);
+        f.x += nx * push; f.y += ny * push;
         // 接触点在 -n 方向（从质心指向墙面）
         const rx = -nx * f.r, ry = -ny * f.r;
         const cvx = f.vx - f.av * ry, cvy = f.vy + f.av * rx;
         const vn = cvx*nx + cvy*ny;
         if (vn < 0){
-          const jn = -(1 + REST) * vn / f.im;
+          const e = -vn < REST_CUT ? 0 : REST;
+          const jn = -(1 + e) * vn / f.im;
           f.vx += nx * jn * f.im; f.vy += ny * jn * f.im;
           // 切向
           let tvx = cvx - nx*vn, tvy = cvy - ny*vn;
@@ -775,7 +787,7 @@
 
         // 位置修正
         const tim = a.im + b.im;
-        const corr = (pen / tim) * 0.7;
+        const corr = (Math.max(0, pen - SLOP) / tim) * 0.7;
         a.x -= nx * corr * a.im; a.y -= ny * corr * a.im;
         b.x += nx * corr * b.im; b.y += ny * corr * b.im;
 
@@ -788,7 +800,8 @@
         const vn = rvx*nx + rvy*ny;
         if (vn > 0) continue;
 
-        const jn = -(1 + REST) * vn / tim;
+        const e = -vn < REST_CUT ? 0 : REST;   // 微碰撞不反弹
+        const jn = -(1 + e) * vn / tim;
         a.vx -= nx*jn*a.im; a.vy -= ny*jn*a.im;
         b.vx += nx*jn*b.im; b.vy += ny*jn*b.im;
 
